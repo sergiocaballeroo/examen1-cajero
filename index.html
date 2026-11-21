@@ -48,13 +48,19 @@
     <!-- Parte inferior: ranuras, teclado y dispensador -->
     <div class="atm__inferior">
       <div class="ranuras">
-        <div class="ranura">
+        <div class="ranura ranura--tarjeta">
           <span class="ranura__etiqueta">Tarjeta</span>
           <div class="ranura__boca ranura__boca--tarjeta" id="ranura-tarjeta"></div>
+          <div class="clip clip--tarjeta" aria-hidden="true">
+            <div class="tarjeta-fisica" id="tarjeta-fisica"><span class="tarjeta-fisica__chip"></span></div>
+          </div>
         </div>
-        <div class="ranura">
+        <div class="ranura ranura--papel">
           <span class="ranura__etiqueta">Comprobante</span>
           <div class="ranura__boca ranura__boca--papel"></div>
+          <div class="clip clip--papel" aria-hidden="true">
+            <div class="papel" id="papel"><span></span><span></span><span></span></div>
+          </div>
         </div>
       </div>
 
@@ -78,8 +84,13 @@
       </div>
 
       <div class="dispensador">
-        <span class="ranura__etiqueta">Efectivo</span>
-        <div class="ranura__boca ranura__boca--efectivo" id="ranura-efectivo"></div>
+        <div class="ranura ranura--efectivo">
+          <span class="ranura__etiqueta">Efectivo</span>
+          <div class="ranura__boca ranura__boca--efectivo" id="ranura-efectivo"></div>
+          <div class="clip clip--billetes" aria-hidden="true">
+            <div class="billetes-fisicos" id="billetes-fisicos"><span class="billete"></span><span class="billete"></span><span class="billete"></span></div>
+          </div>
+        </div>
         <p class="atm__aviso">Cubra el teclado al escribir su NIP. También funciona el teclado físico de su computadora.</p>
       </div>
     </div>

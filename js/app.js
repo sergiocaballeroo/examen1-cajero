@@ -13,7 +13,7 @@
   var REGLAS = Banco.REGLAS;
   var moneda = Validaciones.moneda;
 
-  var $cuerpo, $teclado, $reloj, $modal, $modalSegundos, $ranuraEfectivo, $ranuraTarjeta;
+  var $cuerpo, $teclado, $reloj, $modal, $modalSegundos, $ranuraEfectivo, $ranuraTarjeta, $tarjeta, $papel, $billetes;
 
   /** Estado de la interfaz (no del banco). */
   var ui = {
@@ -32,6 +32,14 @@
   var temporizadores = { inactividad: null, aviso: null, cuenta: null, auto: null };
   var usaTeclado = false;
   var escala = 1; // factor con el que se reduce la carcasa para que quepa completa en la ventana
+  var longitudAnterior = 0; // para animar solo cuando se agrega un dígito
+  var animandoTarjeta = false;
+  var reduceMovimiento = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  /** Duración de una animación física; cero si la persona pidió reducir el movimiento. */
+  function duracion(ms) {
+    return reduceMovimiento ? 0 : ms;
+  }
 
   // ---------------------------------------------------------------- Utilidades
 
@@ -150,8 +158,7 @@
       case 'procesando':
         return;
       case 'nip':
-        detenerInactividad();
-        ir('bienvenida');
+        cerrarSesion('');
         return;
       case 'menu':
       case 'comprobante':
@@ -179,13 +186,21 @@
 
   // ---------------------------------------------------------------- Acciones de cada vista
 
+  /** La tarjeta entra físicamente en la ranura y, cuando termina de entrar, la pantalla pide el NIP. */
   function insertarTarjeta() {
-    if (Banco.estaBloqueada()) {
-      ir('bloqueada');
-      return;
-    }
-    ir('nip');
-    reiniciarInactividad();
+    if (ui.vista !== 'bienvenida' || animandoTarjeta) return;
+    animandoTarjeta = true;
+    $tarjeta.className = 'tarjeta-fisica tarjeta-fisica--entrando';
+    setTimeout(function () {
+      animandoTarjeta = false;
+      $tarjeta.className = 'tarjeta-fisica';
+      if (Banco.estaBloqueada()) {
+        ir('bloqueada');
+        return;
+      }
+      ir('nip');
+      reiniciarInactividad();
+    }, duracion(1000));
   }
 
   function enviarNip() {
@@ -268,7 +283,11 @@
         ir('comprobante', { resultado: r });
         if (op.tipo === 'retiro') {
           $ranuraEfectivo.classList.add('ranura__boca--activa');
-          setTimeout(function () { $ranuraEfectivo.classList.remove('ranura__boca--activa'); }, 4000);
+          $billetes.className = 'billetes-fisicos billetes-fisicos--saliendo';
+          setTimeout(function () {
+            $ranuraEfectivo.classList.remove('ranura__boca--activa');
+            $billetes.className = 'billetes-fisicos';
+          }, 6000);
         }
       }
       reiniciarInactividad();
@@ -316,7 +335,8 @@
   function vistaNip() {
     var puntos = '';
     for (var i = 0; i < 4; i++) {
-      puntos += '<span class="nip__caja' + (i < ui.entrada.length ? ' nip__caja--lleno' : '') + '">' + (i < ui.entrada.length ? '●' : '') + '</span>';
+      var nueva = ui.crecio && i === ui.entrada.length - 1 ? ' nip__caja--nueva' : '';
+      puntos += '<span class="nip__caja' + (i < ui.entrada.length ? ' nip__caja--lleno' : '') + nueva + '">' + (i < ui.entrada.length ? '●' : '') + '</span>';
     }
     return {
       centro: '<div class="centro">' + cabecera('Ingrese su NIP', 'Use el teclado numérico y cubra sus manos.') +
@@ -378,7 +398,7 @@
   function vistaMonto(titulo, ayuda, regla, eyebrow) {
     return {
       centro: '<div class="centro">' + cabecera(titulo, ayuda, eyebrow) +
-        '<p class="captura' + (ui.entrada ? '' : ' captura--vacia') + '">' + (ui.entrada ? moneda(montoCapturado()) : '$ 0.00') + '</p>' +
+        '<p class="captura' + (ui.entrada ? '' : ' captura--vacia') + (ui.crecio ? ' captura--cambio' : '') + '">' + (ui.entrada ? moneda(montoCapturado()) : '$ 0.00') + '</p>' +
         mensajeError() +
         '<p class="nota">' + regla + '</p>' +
         indicacion('Escriba el monto con el teclado y presione Aceptar.') + '</div>',
@@ -414,7 +434,7 @@
     }).join('');
     return {
       centro: '<div class="centro">' + cabecera('Escriba la ' + (esClabe ? 'CLABE' : 'tarjeta') + ' destino', largo + ' dígitos.', 'Depósito a otra cuenta') +
-        '<p class="captura captura--cuenta' + (ui.entrada ? '' : ' captura--vacia') + '">' + (ui.entrada ? Validaciones.agruparDigitos(ui.entrada) : '0000 0000 0000 0000' + (esClabe ? ' 00' : '')) + '</p>' +
+        '<p class="captura captura--cuenta' + (ui.entrada ? '' : ' captura--vacia') + (ui.crecio ? ' captura--cambio' : '') + '">' + (ui.entrada ? Validaciones.agruparDigitos(ui.entrada) : '0000 0000 0000 0000' + (esClabe ? ' 00' : '')) + '</p>' +
         '<p class="nota">' + ui.entrada.length + ' de ' + largo + ' dígitos' + (banco ? ' · ' + banco : '') + '</p>' +
         mensajeError() +
         '<details class="ayuda"><summary>Cuentas de prueba para la demostración</summary><ul>' + ayuda + '</ul></details>' +
@@ -537,9 +557,22 @@
 
   /** Dibuja la vista actual. enfocar: true solo al cambiar de pantalla, para no mover el foco en cada dígito. */
   function render(enfocar) {
+    ui.crecio = ui.entrada.length > longitudAnterior;
+    longitudAnterior = ui.entrada.length;
     var v = VISTAS[ui.vista]();
     $cuerpo.innerHTML = columna('izq', v.izq) + v.centro + columna('der', v.der);
     $cuerpo.dataset.vista = ui.vista;
+    if (enfocar) {
+      // Reinicia la transición de entrada aunque la clase ya estuviera puesta.
+      $cuerpo.classList.remove('pantalla__cuerpo--entrando');
+      void $cuerpo.offsetWidth;
+      $cuerpo.classList.add('pantalla__cuerpo--entrando');
+    }
+    // Elementos físicos de la carcasa que dependen de la pantalla.
+    $ranuraTarjeta.classList.toggle('ranura__boca--parpadea', ui.vista === 'bienvenida');
+    if (ui.vista === 'despedida') $tarjeta.className = 'tarjeta-fisica tarjeta-fisica--saliendo';
+    else if (ui.vista === 'bienvenida') $tarjeta.className = 'tarjeta-fisica tarjeta-fisica--afuera';
+    $papel.className = ui.vista === 'comprobante' ? 'papel papel--saliendo' : 'papel';
     ajustarEscala();
     Array.prototype.forEach.call($teclado.querySelectorAll('[data-tecla]'), function (b) {
       var t = b.dataset.tecla;
@@ -600,7 +633,10 @@
     var objetivo = $cuerpo.querySelector('.opcion[data-slot="' + slot + '"]');
     boton.classList.add('softkey--presionado');
     setTimeout(function () { boton.classList.remove('softkey--presionado'); }, 120);
-    if (objetivo && !objetivo.disabled) objetivo.click();
+    if (!objetivo || objetivo.disabled) return;
+    // La opción en pantalla se ilumina un instante antes de ejecutarse, como eco del botón físico.
+    objetivo.classList.add('opcion--activa');
+    setTimeout(function () { objetivo.click(); }, duracion(120));
   }
 
   function alHacerClic(ev) {
@@ -672,6 +708,9 @@
     $modalSegundos = document.getElementById('modal-segundos');
     $ranuraEfectivo = document.getElementById('ranura-efectivo');
     $ranuraTarjeta = document.getElementById('ranura-tarjeta');
+    $tarjeta = document.getElementById('tarjeta-fisica');
+    $papel = document.getElementById('papel');
+    $billetes = document.getElementById('billetes-fisicos');
 
     document.addEventListener('click', alHacerClic);
     document.addEventListener('keydown', alTeclear);

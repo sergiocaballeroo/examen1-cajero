@@ -45,67 +45,73 @@ La pantalla tiene arriba el logotipo del banco y la hora; abajo del cajero está
 
 Lo hice así porque el examen pide una interfaz que se sienta real, y estos son los elementos que una persona reconoce de un cajero de verdad. Además sirven: la etiqueta de operación evita perderse en pasos intermedios, la ranura iluminada indica dónde tomar el dinero y el aviso del NIP refuerza la seguridad.
 
-### 1.7 El NIP se ve como puntos en cuatro casillas
+### 1.7 Animaciones con sentido físico
+
+La tarjeta se ve asomando en su ranura mientras el cajero espera; al presionar "Insertar tarjeta" entra en la ranura y solo entonces la pantalla pide el NIP. Al terminar la sesión la tarjeta sale de la ranura y parpadea hasta que se toma. Tras un retiro, los billetes salen de la ranura de efectivo y la ranura se ilumina; tras cualquier operación, el comprobante se imprime en pantalla y un papel cae de la ranura de comprobante. Cada cambio de pantalla entra con un desvanecimiento corto, las casillas del NIP y el monto reaccionan a cada dígito, la luz de la ranura de tarjeta parpadea en la bienvenida, y cuando se usa un botón físico la opción en pantalla se ilumina un instante antes de ejecutarse.
+
+Lo hice así porque cada animación cuenta algo que pasa en el mundo físico: dónde está la tarjeta, de dónde sale el dinero, de dónde sale el comprobante. No hay animaciones decorativas. Duran menos de un segundo (la tarjeta, un segundo) para no estorbar, y si la persona tiene activada la opción "reducir movimiento" en su sistema, todas se desactivan y los elementos aparecen directamente en su posición final.
+
+### 1.8 El NIP se ve como puntos en cuatro casillas
 
 Al escribir el NIP aparecen puntos, nunca los números. El botón Aceptar se activa hasta que hay cuatro dígitos.
 
 Lo hice así por seguridad: alguien detrás no puede ver el NIP. Las casillas sirven para que el usuario sepa cuántos dígitos lleva. Y si Aceptar no se activa hasta tener cuatro, no hay forma de mandar un NIP incompleto, que sería el error más común.
 
-### 1.8 Se muestran los intentos que quedan y a los tres fallos se bloquea la tarjeta
+### 1.9 Se muestran los intentos que quedan y a los tres fallos se bloquea la tarjeta
 
 La pantalla dice "Intentos disponibles: 3" y después de cada fallo "NIP incorrecto. Le quedan 2 intentos". Al tercer fallo aparece "Tarjeta retenida" con la explicación de qué hacer.
 
 Lo hice así porque el usuario tiene que saber en qué situación está antes de quedarse sin tarjeta. Tres intentos es lo que hacen los bancos en México. El mensaje de bloqueo no solo dice que falló, dice qué sigue: ir a sucursal o llamar.
 
-### 1.9 Montos rápidos y la opción "Otro monto"
+### 1.10 Montos rápidos y la opción "Otro monto"
 
 En retiro hay seis botones con montos comunes ($200, $500, $1,000, $2,000, $3,000 y $5,000) y un botón "Otro monto" para escribir uno diferente.
 
 Lo hice así porque es más fácil tocar un botón que teclear un número, y la mayoría de los retiros son de esos montos. Además, esos botones ya son montos válidos, así que no hay error de múltiplo. "Otro monto" queda para quien necesite algo distinto.
 
-### 1.10 Los mensajes de error dicen exactamente qué está mal
+### 1.11 Los mensajes de error dicen exactamente qué está mal
 
 Cada regla tiene su propio mensaje. Ejemplos: "El monto debe ser múltiplo de $100.00 (billetes disponibles: 100, 200 y 500)", "Supera su límite diario de retiro. Hoy aún puede retirar $2,500.00", "El dígito verificador de la CLABE no coincide. Revise el número". El mensaje sale en rojo justo debajo del dato que se escribió.
 
 Lo hice así porque un mensaje tipo "monto inválido" obliga a adivinar. Si el mensaje dice cuál es la regla y, cuando se puede, cuánto sí se puede, el usuario corrige en un paso.
 
-### 1.11 Antes de mover dinero se confirma, y después se da un comprobante
+### 1.12 Antes de mover dinero se confirma, y después se da un comprobante
 
 Retiro y depósito pasan por una pantalla que resume operación, monto, destino y cuenta de cargo, con un botón verde Confirmar. Al terminar sale un comprobante con folio, fecha, monto, saldo anterior y saldo actual; en los retiros también dice con qué billetes se entregó el dinero.
 
 Lo hice así porque son operaciones que no se pueden deshacer. La confirmación le da al usuario una última oportunidad de revisar. El comprobante le deja claro que la operación sí se hizo y cuánto le quedó. El verde solo se usa en Confirmar para que nunca se confunda con un "Continuar" normal.
 
-### 1.12 Siempre hay forma de cancelar o regresar
+### 1.13 Siempre hay forma de cancelar o regresar
 
 La tecla roja Cancelar funciona en todas las pantallas: en una captura regresa al menú y en el menú termina la sesión. Cada pantalla intermedia tiene además su botón Regresar o Cancelar, y arriba a la derecha está Salir durante toda la sesión.
 
 Lo hice así porque el usuario debe poder salirse de cualquier paso sin terminar lo que empezó, y porque Cancelar hace siempre lo mismo en toda la app, así no hay sorpresas.
 
-### 1.13 La sesión se cierra sola si no hay actividad, pero avisa antes
+### 1.14 La sesión se cierra sola si no hay actividad, pero avisa antes
 
 A los 45 segundos sin tocar nada aparece "¿Sigue ahí?" con una cuenta regresiva de 15 segundos y un botón Continuar. Si no responde, la sesión se cierra y la pantalla de despedida dice que fue por inactividad.
 
 Lo hice así porque un cajero es público: si alguien se va y deja la sesión abierta, el siguiente podría usar su cuenta. El aviso evita cerrarle la sesión a alguien que solo estaba leyendo. Cualquier toque o tecla reinicia el contador, así que quien está usando el cajero nunca ve el aviso.
 
-### 1.14 La consulta de saldo muestra algo más que el saldo
+### 1.15 La consulta de saldo muestra algo más que el saldo
 
 Además del saldo muestra "Disponible para retirar hoy en cajero" y los últimos cinco movimientos.
 
 Lo hice así porque cuando alguien consulta su saldo normalmente quiere saber cuánto puede sacar o si ya le cayó un depósito. Mostrarlo ahí le ahorra otra operación. Son solo cinco movimientos para que la pantalla no se llene.
 
-### 1.15 Al escribir la CLABE se agrupa de cuatro en cuatro y se muestra el banco
+### 1.16 Al escribir la CLABE se agrupa de cuatro en cuatro y se muestra el banco
 
 Mientras se escribe la CLABE aparece "n de 18 dígitos" y, desde el tercer dígito, el nombre del banco (o "Institución no reconocida"). Los números se ven en grupos de cuatro.
 
 Lo hice así porque dieciocho dígitos seguidos son muy difíciles de revisar; en grupos de cuatro se detectan los errores de dedo. Ver el banco antes de continuar es una revisión extra: si esperaba Banorte y dice Santander, el usuario se da cuenta de inmediato.
 
-### 1.16 Funciona en celular y no tiene modo oscuro
+### 1.17 Funciona en celular y no tiene modo oscuro
 
 En computadora, si la carcasa completa no cabe en la ventana (por ejemplo en una laptop de 1366 por 768), toda la carcasa se reduce proporcionalmente para que pantalla, botones laterales y teclado se vean sin desplazarse, como en un cajero real que siempre se ve entero. En pantallas angostas los botones físicos laterales se ocultan y las opciones se convierten en botones grandes dentro de la pantalla, una debajo de otra; el teclado queda abajo. La pantalla del cajero siempre es azul, no cambia con el tema del sistema.
 
 Lo hice así para que el examen se pueda revisar desde cualquier dispositivo. En un celular no caben los botones laterales, así que las opciones pasan a la pantalla, que es táctil. No puse modo oscuro porque un cajero real siempre se ve igual.
 
-### 1.17 Se puede usar con el teclado físico y con lector de pantalla
+### 1.18 Se puede usar con el teclado físico y con lector de pantalla
 
 Toda la app se maneja con el teclado de la computadora: números, Retroceso para borrar, Enter para aceptar, Esc para cancelar y Tab para moverse. Los mensajes de error se anuncian a lectores de pantalla y al cambiar de pantalla el foco queda en el botón principal.
 

@@ -19,6 +19,7 @@ const texto = async () => (await page.locator('#pantalla').innerText());
 const cap = (nombre) => page.screenshot({ path: path.join(CAPTURAS, nombre + '.png'), fullPage: true });
 const tecla = async (t) => page.click(`[data-tecla="${t}"]`);
 const digitos = async (s) => { for (const d of s) await tecla(d); };
+const insertar = async () => { await page.click('[data-accion="insertar"]'); await page.waitForFunction(() => !document.querySelector('#pantalla').innerText.includes('Inserte su tarjeta')); };
 
 await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
@@ -27,7 +28,7 @@ ok((await texto()).includes('Inserte su tarjeta'), 'pantalla de bienvenida');
 await cap('01-bienvenida');
 
 // a) Ingreso al sistema
-await page.click('[data-accion="insertar"]');
+await insertar();
 ok((await texto()).includes('Ingrese su NIP'), 'pantalla de NIP');
 await cap('02-nip');
 await digitos('1234'); await tecla('aceptar');
@@ -126,7 +127,7 @@ await tecla('cancelar'); await page.click('#btn-salir');
 ok((await texto()).includes('Gracias por su visita'), 'despedida');
 await cap('15-despedida');
 await page.reload();
-await page.click('[data-accion="insertar"]');
+await insertar();
 await digitos('8420'); await tecla('aceptar');
 await page.click('[data-vista="saldo"]');
 ok((await texto()).includes('$4,750.00'), 'saldo persiste tras recargar');
@@ -134,16 +135,16 @@ ok((await texto()).includes('$4,750.00'), 'saldo persiste tras recargar');
 // Bloqueo por 3 intentos
 await page.evaluate(() => localStorage.clear());
 await page.reload();
-await page.click('[data-accion="insertar"]');
+await insertar();
 for (const nip of ['0000', '1111', '2222']) { await digitos(nip); await tecla('aceptar'); }
 ok((await texto()).includes('Tarjeta retenida'), 'bloqueo tras 3 intentos');
 await cap('16-bloqueada');
 await page.reload();
-await page.click('[data-accion="insertar"]');
+await insertar();
 ok((await texto()).includes('Tarjeta retenida'), 'bloqueo persiste');
 page.once('dialog', d => d.accept());
 await page.click('[data-accion="restablecer"]');
-await page.click('[data-accion="insertar"]');
+await insertar();
 ok((await texto()).includes('Ingrese su NIP'), 'restablecer quita el bloqueo');
 
 // Responsivo

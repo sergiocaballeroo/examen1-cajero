@@ -20,6 +20,7 @@ El método fue conversacional: yo planteé el problema y las decisiones de alto 
 | 5 | Diseño sobrio, elegante y creíble como banco | Rediseño visual con paleta, marca y tipografía |
 | 6 | "Esto no parece la interfaz de un banco" | Cajero clásico: pantalla con botones físicos laterales, teclado y ranuras |
 | 7 | "No se ve la pantalla completa", con captura | La carcasa se escala para caber entera en la ventana |
+| 8 | "Bien la lógica, ¿puedes agregarle animaciones?" | Animaciones físicas: tarjeta, billetes, comprobante, transiciones |
 
 ## Prompt 1: planteamiento del examen
 
@@ -121,12 +122,18 @@ Adjunté una captura donde el teclado quedaba cortado abajo del borde del navega
 
 **Qué produjo.** La carcasa mide unos 940 píxeles de alto y en una laptop no cabía. Se agregó una función que mide la carcasa y, si no cabe, la reduce proporcionalmente (con `transform: scale`) para que pantalla, botones laterales y teclado se vean siempre completos sin desplazarse. Se recalcula al cambiar el tamaño de la ventana y al cambiar de pantalla, y la alineación de los botones físicos toma en cuenta la escala. Se verificó en 1366 por 768, 1536 por 730 y 1920 por 969 píxeles. Las 32 pruebas siguen pasando.
 
+## Prompt 8: animaciones
+
+> Bien la lógica, ¿puedes agregarle animaciones?
+
+**Qué produjo.** Se agregaron animaciones con sentido físico, no decorativas: la tarjeta asoma en la ranura y entra al presionar "Insertar tarjeta" (la pantalla pide el NIP cuando termina de entrar), y sale parpadeando al cerrar la sesión; los billetes salen de la ranura de efectivo tras un retiro; el comprobante se imprime en pantalla y un papel cae de su ranura; cada cambio de pantalla entra con un desvanecimiento corto; las casillas del NIP y el monto reaccionan a cada dígito; la luz de la ranura de tarjeta parpadea en la bienvenida; y al usar un botón físico la opción en pantalla se ilumina un instante antes de ejecutarse. Todas se desactivan si el sistema tiene activada la opción de reducir movimiento. Las pruebas se ajustaron para esperar a que la tarjeta termine de entrar. Un primer intento colocaba los billetes al fondo del panel en vez de bajo la ranura; se corrigió envolviendo la ranura de efectivo igual que las demás. Las 32 pruebas pasan.
+
 ## Cómo reproducir el proceso
 
 1. Instalar Claude Code y abrir una terminal en una carpeta vacía.
 2. Pegar el Prompt 1 con la foto o el texto del enunciado.
 3. Responder las preguntas de orientación como en el Prompt 2, o con otras decisiones.
 4. Pedir que ejecute las pruebas y publique el repositorio.
-5. Revisar el resultado y pedir ajustes con nuevos prompts, como en los prompts 3, 5, 6 y 7.
+5. Revisar el resultado y pedir ajustes con nuevos prompts, como en los prompts 3, 5, 6, 7 y 8.
 
 Los prompts que se usen después de esta versión se agregan al final de este archivo.
