@@ -1,0 +1,14 @@
+{
+  "name": "examen1-cajero",
+  "version": "1.0.0",
+  "description": "Interfaz gráfica de un cajero automático (Examen 1). La app no tiene dependencias; Playwright solo se usa para las pruebas.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/pruebas.mjs",
+    "start": "npx serve ."
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

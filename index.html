@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interfaz gráfica de un cajero automático: ingreso con NIP, consulta de saldo, retiro de efectivo y depósito a otra cuenta. Examen 1.">
+  <title>Cajero automático</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f3d91'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' fill='white' font-family='Arial'%3E$%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <main class="cajero" id="cajero" aria-label="Cajero automático">
+    <header class="cajero__barra">
+      <span class="cajero__banco">Banco Demo · Cajero automático</span>
+      <span class="cajero__reloj" id="reloj" aria-live="off"></span>
+      <button type="button" class="btn btn--fantasma" id="btn-salir" hidden>Salir</button>
+    </header>
+
+    <div class="cajero__cuerpo">
+      <section class="pantalla" id="pantalla" aria-live="polite"></section>
+
+      <aside class="teclado" id="teclado" aria-label="Teclado numérico">
+        <div class="teclado__digitos">
+          <button type="button" class="tecla" data-tecla="1">1</button>
+          <button type="button" class="tecla" data-tecla="2">2</button>
+          <button type="button" class="tecla" data-tecla="3">3</button>
+          <button type="button" class="tecla" data-tecla="4">4</button>
+          <button type="button" class="tecla" data-tecla="5">5</button>
+          <button type="button" class="tecla" data-tecla="6">6</button>
+          <button type="button" class="tecla" data-tecla="7">7</button>
+          <button type="button" class="tecla" data-tecla="8">8</button>
+          <button type="button" class="tecla" data-tecla="9">9</button>
+          <button type="button" class="tecla tecla--borrar" data-tecla="borrar" aria-label="Borrar último dígito">Borrar</button>
+          <button type="button" class="tecla" data-tecla="0">0</button>
+          <button type="button" class="tecla tecla--cancelar" data-tecla="cancelar">Cancelar</button>
+        </div>
+        <button type="button" class="tecla tecla--aceptar" data-tecla="aceptar">Aceptar</button>
+        <p class="teclado__ayuda">También puede usar el teclado físico: dígitos, Retroceso, Enter y Esc.</p>
+      </aside>
+    </div>
+
+    <div class="modal" id="modal-inactividad" role="alertdialog" aria-modal="true" aria-labelledby="modal-titulo" hidden>
+      <div class="modal__caja">
+        <h2 id="modal-titulo">¿Sigue ahí?</h2>
+        <p>Su sesión se cerrará en <strong id="modal-segundos">15</strong> segundos por inactividad.</p>
+        <button type="button" class="btn btn--primario" id="btn-continuar" data-accion="continuar">Continuar</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/validaciones.js"></script>
+  <script src="js/banco.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
