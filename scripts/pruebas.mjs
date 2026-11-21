@@ -11,6 +11,8 @@ const ok = (cond, msg) => { n++; if (!cond) { errores.push(msg); console.log('FA
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+// Sin animaciones: las capturas muestran el estado final de cada pantalla y las pruebas no esperan transiciones.
+await page.emulateMedia({ reducedMotion: 'reduce' });
 const consola = [];
 page.on('console', m => { if (m.type() === 'error') consola.push(m.text()); });
 page.on('pageerror', e => consola.push(String(e)));
