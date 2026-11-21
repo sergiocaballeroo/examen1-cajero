@@ -3,137 +3,233 @@
 Examen 1. Interfaz gráfica para un cajero automático.
 Sergio Jair Caballero Martínez. 2026-11-20.
 
-## Herramienta y forma de trabajo
+## Herramienta
 
-La aplicación se generó con **Claude Code** (Anthropic), modelo Claude Fable 5.1, desde la terminal de Windows 11, en una sola sesión el 2026-11-20. Claude Code es un asistente que trabaja directamente sobre la carpeta del proyecto: crea y edita archivos, ejecuta pruebas, hace commits y publica en GitHub.
+La aplicación se generó con **Claude Code** (Anthropic), modelo Claude Fable 5.1, desde la terminal de Windows 11. Claude Code trabaja directamente sobre la carpeta del proyecto: crea y edita archivos, ejecuta pruebas, hace commits y publica en GitHub.
 
-El método fue conversacional: yo planteé el problema y las decisiones de alto nivel, y el asistente propuso, construyó y probó. Cuando algo no me convencía (la redacción de la justificación, el diseño visual) lo pedí en un nuevo prompt. Los prompts se transcriben con la ortografía corregida pero sin cambiar su contenido.
+El trabajo se hizo por etapas. Cada etapa tiene su prompt; se ejecutan en orden, en la misma sesión, y al final se obtiene la aplicación tal como está publicada. Las decisiones que cada prompt fija se explican en `JUSTIFICACION.md`.
 
-## Resumen
+## Etapa 1: alcance y arquitectura
 
-| # | Prompt (resumen) | Qué produjo |
-|---|---|---|
-| 1 | Enunciado del examen, con foto del pizarrón | Contexto recuperado y cuatro preguntas de orientación |
-| 2 | Respuestas a las preguntas de orientación | Toda la aplicación, las pruebas, la documentación y la publicación |
-| 3 | "La justificación ni yo la entiendo" | Justificación reescrita en lenguaje llano |
-| 4 | "Ábrelo por favor" | Sitio abierto en el navegador |
-| 5 | Diseño sobrio, elegante y creíble como banco | Rediseño visual con paleta, marca y tipografía |
-| 6 | "Esto no parece la interfaz de un banco" | Cajero clásico: pantalla con botones físicos laterales, teclado y ranuras |
-| 7 | "No se ve la pantalla completa", con captura | La carcasa se escala para caber entera en la ventana |
-| 8 | "Bien la lógica, ¿puedes agregarle animaciones?" | Animaciones físicas: tarjeta, billetes, comprobante, transiciones |
+```
+Diseña e implementa la interfaz gráfica de un cajero automático como aplicación web.
+Debe implementar cuatro funciones: a) ingreso al sistema con NIP (el NIP es 8420),
+b) consulta de saldo, c) retiro de efectivo y d) depósito a otra cuenta.
 
-## Prompt 1: planteamiento del examen
+Restricciones técnicas:
+- HTML, CSS y JavaScript puros. Sin frameworks, sin empaquetador, sin paso de compilación.
+- Debe funcionar abriendo index.html directamente desde el disco (file://) y también publicada
+  en GitHub Pages. Por eso usa scripts clásicos con <script src>, no módulos ES.
+- Separa el código en tres archivos con responsabilidades distintas:
+  js/validaciones.js (algoritmos: CLABE, Luhn, formato de moneda),
+  js/banco.js (reglas de negocio, estado de la cuenta, persistencia; no toca el DOM) y
+  js/app.js (interfaz: máquina de estados que dibuja cada pantalla y maneja el teclado).
+- Cada archivo va envuelto en una función inmediata y expone un solo objeto global.
+- Idioma español de México. Moneda en pesos con dos decimales usando Intl.NumberFormat
+  (es-MX). Fechas con Intl.DateTimeFormat en la zona America/Mexico_City, formato de 24 horas.
+- Todo el texto en pantalla en lenguaje de usuario, sin jerga técnica.
+```
 
-> ¿Recuerdas que me habías ayudado a llenar un tema de mi examen 1, que consistía en hacer una página web con esas características? ¿Me ayudarías con esto para hacer hoy el entregable?
+## Etapa 2: reglas de negocio como en un banco real
 
-Adjunté la fotografía del pizarrón con el enunciado:
+```
+Implementa en js/banco.js las reglas de operación de un banco mexicano real. Centraliza los
+parámetros en un objeto REGLAS para poder ajustarlos sin tocar la lógica.
 
-> **Examen 1.** Diseñar e implementar una interfaz gráfica para un cajero automático. Deberá implementar las siguientes funciones:
-> a) Ingreso al sistema (NIP: 8420)
-> b) Consulta de saldo
-> c) Retiro de efectivo
-> d) Depósito a otra cuenta
-> \* Justificar cada una de las decisiones tomadas para el diseño e implementación.
-> \* Incluir los prompts usados para generar la aplicación.
+Ingreso:
+- NIP de 4 dígitos, valor 8420. Tres intentos fallidos bloquean la tarjeta de forma
+  persistente; al intentar de nuevo debe aparecer "tarjeta retenida".
+- El NIP se compara en el cliente porque no hay servidor; documenta esto como limitación.
 
-**Qué produjo.** El asistente recuperó el contexto de la tarea anterior de la materia (repositorio `tarea2-ia-ui`, hecho en Angular, con reporte y carátula) y, antes de escribir código, me planteó cuatro preguntas: tecnología, entregables, datos simulados y fecha de entrega.
+Retiro de efectivo:
+- Múltiplos de $100 (el dispensador tiene billetes de 100, 200 y 500). Mínimo $100.
+- Máximo $6,000 por operación y $9,000 acumulados por día. El acumulado diario se reinicia
+  automáticamente al cambiar la fecha.
+- No permitir retirar más que el saldo. Devolver el desglose de billetes entregados
+  (mayor denominación primero).
 
-## Prompt 2: decisiones de orientación
+Depósito a otra cuenta:
+- Se carga a la cuenta del titular autenticado (no se simula entrada de billetes).
+- Destino por CLABE de 18 dígitos o por tarjeta de 16 dígitos.
+- La CLABE se valida con el algoritmo oficial del dígito verificador (ponderaciones 3, 7, 1
+  cíclicas sobre los primeros 17 dígitos) y los tres primeros dígitos se buscan en un
+  catálogo de códigos de institución de Banxico para mostrar el nombre del banco.
+- La tarjeta se valida con el algoritmo de Luhn y se identifica la marca por el primer dígito.
+- Mínimo $1, máximo $20,000 por operación, nunca mayor al saldo, nunca a la propia cuenta.
 
-Respondí las cuatro preguntas así:
+Generales:
+- Toda operación exitosa genera un movimiento con folio consecutivo, fecha y monto.
+- Saldo, movimientos, intentos fallidos, bloqueo y acumulado diario se guardan en
+  localStorage bajo una sola clave; si no está disponible, trabajar en memoria.
+- Incluye una función para restablecer la demostración al estado inicial.
+- Datos de prueba: saldo inicial $12,500.00, cuatro movimientos previos, y cinco cuentas
+  destino de prueba (tres CLABE y dos tarjetas) con dígito verificador válido, calculadas con
+  los mismos algoritmos.
+- Cada validación devuelve un mensaje específico que diga la regla y, cuando se pueda, el
+  valor que sí es válido (por ejemplo cuánto se puede retirar todavía hoy).
+```
 
-| Pregunta del asistente | Mi respuesta |
-|---|---|
-| ¿Con qué tecnología hacemos la interfaz? (Angular 21 + Material, o HTML, CSS y JS puro) | Lo que sea mejor para hacer el entregable, aunque igualmente considero que sería buena idea GitHub Pages y el entregable para ejecutar, ¿no? O no sé cómo lo pida el examen 1. |
-| ¿Qué entregables generamos hoy? (repo público + GitHub Pages, reporte Word/PDF, pruebas E2E) | Repo público + GitHub Pages, justo repo público. |
-| ¿Qué datos simulados usamos? NIP 8420 es fijo por el examen. | Establece reglas como si fuera un banco real. |
-| ¿Cuál es la fecha de entrega para la carátula? | Hoy, 2026-11-20. |
+## Etapa 3: diseño de la carcasa y la pantalla
 
-**Qué produjo.** Con estas respuestas el asistente tomó las decisiones que se explican en `JUSTIFICACION.md` y generó, en este orden:
+```
+Diseña la interfaz como un cajero automático clásico, no como una página web.
 
-1. `js/validaciones.js`: dígito verificador de CLABE, catálogo de bancos, algoritmo de Luhn y formato de moneda. Antes calculó con Node números de cuenta de prueba con dígito verificador correcto.
-2. `js/banco.js`: reglas (NIP 8420, tres intentos, múltiplos de 100, límites por operación y por día, depósito hasta 20,000), cuenta simulada y persistencia en localStorage.
-3. `js/app.js`: máquina de estados con catorce pantallas, teclado en pantalla y físico, confirmación, comprobante y cierre por inactividad.
-4. `index.html` y `css/estilos.css`: estructura de cajero y estilos responsivos.
-5. `scripts/pruebas.mjs`: 32 pruebas con Playwright que además generan las capturas.
-6. `README.md`, `docs/JUSTIFICACION.md` y este archivo.
-7. Repositorio público en GitHub y publicación en GitHub Pages.
+Carcasa (index.html y css/estilos.css):
+- Carcasa gris metálico con degradado y bisel. Al centro, la pantalla; a cada lado, cuatro
+  botones físicos (softkeys) con una guía que apunta al renglón de la pantalla que activan.
+- Debajo: a la izquierda las ranuras de tarjeta (con luz verde) y de comprobante; al centro
+  un teclado numérico tipo EPP de cuatro columnas (dígitos 1 a 9 y 0, y en la columna derecha
+  Cancelar en rojo, Borrar en amarillo y Aceptar en verde, con teclas en relieve); a la
+  derecha la ranura de efectivo y un aviso "Cubra el teclado al escribir su NIP".
 
-**Iteraciones sin prompt.** Las primeras correcciones no las pedí yo: salieron de las pruebas automáticas que el asistente ejecutó por su cuenta.
+Pantalla:
+- Fondo azul profundo (#0b2a5b, más oscuro hacia abajo) con texto blanco, bisel negro y un
+  reflejo suave de cristal. Barra superior con el logotipo y nombre del banco a la izquierda
+  y la fecha y hora a la derecha.
+- El cuerpo tiene tres columnas: cuatro renglones de opciones a la izquierda (L1 a L4),
+  el contenido al centro, y cuatro renglones a la derecha (R1 a R4). Cada opción lleva una
+  flecha hacia su botón físico: amarilla por defecto, verde para la acción principal, roja
+  para cancelar o salir. Las opciones se activan tocándolas o con su botón físico.
+- Posiciona los botones físicos con JavaScript a la altura exacta de su opción y recalcula
+  al cambiar de pantalla y al cambiar el tamaño de la ventana.
 
-- Corrida 1: falló la primera prueba. El aviso de inactividad tenía `display: grid` y eso anulaba el atributo `hidden`, así que una capa invisible tapaba toda la pantalla y bloqueaba los clics. Se corrigió con `.modal[hidden] { display: none; }`.
-- Corrida 2: falló la prueba 24 por culpa del propio script, que intentaba hacer clic en una cuenta de prueba dentro de un desplegable cerrado. Se corrigió la prueba, no la app.
-- Corrida 3: 32 de 32 pruebas pasaron.
+Marca y tipografía:
+- Banco ficticio "Banco Meridiano" con logotipo propio en SVG (un círculo cruzado por una
+  línea horizontal). No usar nombres, colores ni logotipos de bancos reales.
+- Fuente Inter desde Google Fonts con respaldo a Segoe UI y la fuente del sistema. El
+  comprobante en fuente monoespaciada.
+- Solo tres colores con significado en toda la interfaz: verde para aceptar y confirmar,
+  rojo para cancelar y avisos, amarillo para borrar y para las flechas.
+- Texto base de 18 píxeles, botones de al menos 56 píxeles de alto, contraste alto.
+```
 
-## Prompt 3: la justificación en lenguaje llano
+## Etapa 4: pantallas y flujo
 
-> Espera, la justificación ni yo la entiendo. ¿Heurísticas de Nielsen y metáfora de kiosco? ¿De dónde sacas todo eso?
+```
+Implementa en js/app.js una máquina de estados con estas pantallas. Cada pantalla devuelve el
+contenido del centro y qué opción va en cada uno de los ocho renglones laterales. Al cambiar
+de pantalla se redibuja todo el contenido. El teclado numérico escribe en el campo activo de la
+pantalla (NIP, monto o cuenta) con un tope de dígitos (4, 5, 16 o 18); cuando no hay campo,
+las teclas de dígitos se deshabilitan. El teclado físico de la computadora también funciona:
+dígitos, Retroceso, Enter y Esc.
 
-**Qué produjo.** La primera versión de `JUSTIFICACION.md` citaba heurísticas de Nielsen, la ley de Fitts y criterios WCAG. Se reescribió completa en primera persona y en lenguaje cotidiano: para cada decisión, qué hice y por qué, sin teoría, de modo que yo pueda explicarla con mis palabras.
+1. Bienvenida: logotipo grande, "Inserte su tarjeta". R4: Insertar tarjeta. L4: Restablecer
+   demostración (con confirmación).
+2. NIP: cuatro casillas que se llenan con puntos, nunca se muestra el dígito. Contador de
+   intentos disponibles. R4: Aceptar (habilitado solo con 4 dígitos). L4: Cancelar.
+3. Menú: L1 Consulta de saldo, L2 Depósito a otra cuenta, L4 Salir, R1 Retiro de efectivo.
+   Muestra cuenta (terminación) y titular.
+4. Saldo: saldo disponible en grande, "disponible para retirar hoy", últimos cinco
+   movimientos. L4 Salir, R4 Otra operación.
+5. Retiro: seis montos rápidos ($200, $500, $1,000, $2,000, $3,000, $5,000) en L1 a L3 y
+   R1 a R3; R4 Otro monto; L4 Regresar. Las reglas aparecen como nota.
+6. Otro monto: captura con el teclado, monto formateado en grande, mensaje de error debajo.
+   L4 Cancelar, R4 Continuar.
+7. Tipo de destino: L1 CLABE interbancaria, R1 Número de tarjeta, L4 Regresar.
+8. Cuenta destino: dígitos agrupados de cuatro en cuatro, contador "n de 18 dígitos" y, desde
+   el tercer dígito de una CLABE, el nombre del banco o "Institución no reconocida". Un
+   desplegable con las cuentas de prueba que se pueden tocar para llenar el campo.
+   L4 Cancelar, R4 Continuar (solo con la longitud completa).
+9. Monto a depositar: igual que otro monto, mostrando el destino y el banco.
+10. Confirmación: tabla con operación, monto, destino y cuenta de cargo.
+    L4 "No, cancelar", R4 "Sí, confirmar".
+11. Procesando: indicador de carga durante 1.8 segundos con texto según la operación.
+12. Comprobante: ticket impreso (papel blanco, borde dentado, fuente monoespaciada) con folio,
+    fecha, cuenta, operación, destino, monto, saldo anterior y saldo actual. En retiros, el
+    desglose de billetes. L4 Salir, R4 Otra operación.
+13. Tarjeta retenida: explicación y qué hacer. L4 Restablecer demostración.
+14. Despedida: "Gracias por su visita, no olvide retirar su tarjeta", con el motivo si la sesión
+    se cerró por inactividad. R4 Terminar. Regresa sola a la bienvenida a los 6 segundos.
 
-## Prompt 4: abrir el sitio
+Comportamiento general:
+- La tecla Cancelar del teclado regresa al menú desde cualquier captura; en el menú y en el
+  comprobante termina la sesión; en el NIP expulsa la tarjeta.
+- Cierre por inactividad: a los 45 segundos sin actividad aparece un aviso "¿Sigue ahí?" con
+  cuenta regresiva de 15 segundos y botón Continuar; si no hay respuesta la sesión se cierra.
+  Cualquier toque o tecla reinicia el conteo.
+- Los mensajes de error se muestran en un recuadro rojo con role="alert", junto al dato.
+```
 
-> Ábrelo por favor.
+## Etapa 5: accesibilidad, celular y tamaño de ventana
 
-**Qué produjo.** El asistente abrió https://sergiocaballeroo.github.io/examen1-cajero/ en el navegador para que lo recorriera.
+```
+- Toda la aplicación debe poder usarse con teclado: Tab entre controles, foco visible en
+  amarillo, Enter y Esc. Al cambiar de pantalla, mueve el foco a la acción principal solo si
+  la persona navega con teclado; con mouse o táctil no muestres el anillo de foco.
+- La pantalla es una región aria-live; el aviso de inactividad es un alertdialog; el teclado
+  en pantalla y los botones físicos tienen etiquetas; las casillas del NIP anuncian cuántos
+  dígitos llevan sin revelarlos.
+- En pantallas de menos de 900 píxeles de ancho oculta los botones físicos laterales y
+  convierte las opciones en botones grandes dentro de la pantalla, uno debajo de otro; el
+  teclado queda debajo. Sin desplazamiento horizontal a 400 píxeles.
+- En computadora, si la carcasa completa no cabe en la ventana, redúcela proporcionalmente
+  (transform: scale) para que pantalla, botones laterales y teclado se vean enteros sin
+  desplazarse. Recalcula al cambiar el tamaño de la ventana y al cambiar de pantalla, y toma en
+  cuenta la escala al alinear los botones físicos.
+- No hay modo oscuro: la pantalla del cajero siempre se ve igual.
+```
 
-## Prompt 5: rediseño visual sobrio y creíble
+## Etapa 6: animaciones con sentido físico
 
-> ¿Puedes buscar una interfaz que use colores o una paleta de colores seria, que el diseño sea sobrio y elegante pero lo suficientemente real para creer que es un banco o así? Busca todo lo necesario por favor, como tipo que tú veas, para que sea posible que sea un buen proyecto a nivel diseño.
+```
+Agrega animaciones que cuenten lo que pasa físicamente, sin adornos:
+- La tarjeta asoma en su ranura mientras el cajero espera. Al presionar "Insertar tarjeta"
+  entra en la ranura (1 segundo) y solo entonces la pantalla pide el NIP. Al terminar la
+  sesión la tarjeta sale de la ranura y parpadea hasta que se toma. Si la tarjeta queda
+  retenida, no sale.
+- Tras un retiro, tres billetes salen escalonados de la ranura de efectivo y la ranura se
+  ilumina unos segundos.
+- En el comprobante, el ticket se imprime en pantalla de arriba hacia abajo y un papel cae de
+  la ranura de comprobante.
+- Cada cambio de pantalla entra con un desvanecimiento corto (menos de 0.3 segundos).
+- Las casillas del NIP y el monto capturado reaccionan a cada dígito nuevo.
+- La luz de la ranura de tarjeta parpadea en la bienvenida.
+- Al usar un botón físico lateral, la opción en pantalla se ilumina un instante antes de
+  ejecutarse y el botón se hunde.
+- Si el sistema tiene activada la preferencia de reducir movimiento, desactiva todas las
+  animaciones y coloca cada elemento directamente en su posición final.
+```
 
-**Qué produjo.** El asistente buscó en la web referencias de interfaces de cajero y guías de color para banca y fintech, y aplicó estas conclusiones: azul marino como base de confianza, superficies blancas y grises fríos, dorado únicamente como acento pequeño, y verde y rojo solo con significado. Con eso:
+## Etapa 7: pruebas automatizadas
 
-- Reescribió `css/estilos.css` completo.
-- Creó la marca ficticia "Banco Meridiano" con logotipo en SVG, para no imitar a un banco real.
-- Agregó las tipografías Inter (texto) y Manrope (títulos) desde Google Fonts, con respaldo a fuentes del sistema.
-- Añadió una tarjeta de débito ilustrada en la bienvenida, iconos SVG en el menú, etiquetas de operación en dorado en los pasos intermedios, el pie del cajero con aviso de seguridad y el comprobante estilo ticket.
-- Limitó el anillo de foco a la navegación con teclado para que no aparezca al usar mouse.
+```
+Escribe scripts/pruebas.mjs con Playwright (Chromium sin interfaz), sin framework de pruebas,
+que recorra los cuatro flujos y verifique las reglas, y que al mismo tiempo guarde una captura
+de cada pantalla en evidencias/capturas. Debe poder correr contra el archivo local o contra el
+sitio publicado con la variable BASE. Casos mínimos:
+- NIP incorrecto resta intentos; segundo intento con el teclado físico; NIP 8420 entra.
+- Saldo inicial 12,500. Retiro rápido de 500 con comprobante, saldo 12,000 y un billete de 500.
+- Otro monto: rechaza 150 (no múltiplo), rechaza 7,000 (máximo por operación), acepta 6,000,
+  rechaza 3,000 por límite diario, acepta 2,000. Cancelar regresa al menú.
+- Depósito: rechaza CLABE con dígito verificador incorrecto, rechaza la propia cuenta, muestra
+  institución no reconocida, detecta Banorte, rechaza monto mayor a 20,000, acepta 1,250 y deja
+  saldo 4,750. Tarjeta: rechaza una que no pasa Luhn, acepta una Mastercard válida, rechaza
+  depósito mayor al saldo.
+- Salir muestra la despedida; el saldo persiste tras recargar.
+- Tres NIP incorrectos bloquean la tarjeta; el bloqueo persiste tras recargar; restablecer lo
+  quita.
+- A 400 píxeles de ancho no hay desplazamiento horizontal. No hay errores en la consola.
+Fija la versión de Playwright en package.json. Documenta en el README cómo correrlas.
+```
 
-Una prueba cambió porque el título "Monto a depositar" pasó a "¿Cuánto desea depositar?". Las 32 pruebas volvieron a pasar, en local y contra el sitio publicado.
+## Etapa 8: documentación y publicación
 
-Durante el rediseño pregunté:
-
-> ¿Por qué Meridiano?
-
-Respuesta del asistente: es un nombre inventado para no imitar a un banco real en un trabajo público; suena a institución financiera seria y el logotipo (un círculo con una línea horizontal) representa un meridiano. Se cambia en `js/banco.js` y en el encabezado de `index.html`.
-
-## Prompt 6: que de verdad parezca un cajero
-
-> Esto no parece la interfaz de un banco, la neta.
-
-**Qué produjo.** El asistente reconoció que las dos versiones anteriores se veían como una página web metida en un marco (tarjetas redondeadas, sombras, teclado como widget) y me ofreció tres direcciones con un boceto de cada una: pantalla azul a pantalla completa estilo BBVA, pantalla blanca con franja de color estilo Banorte o Santander, y cajero clásico con botones físicos a los lados. Elegí la tercera:
-
-> Cajero clásico con botones laterales.
-
-Con esa decisión se rehicieron `index.html`, `css/estilos.css` y la parte de vistas de `js/app.js`:
-
-- Carcasa gris metálico con la pantalla azul al centro, cuatro botones físicos a cada lado, teclado numérico abajo (teclas claras, Cancelar rojo, Borrar amarillo, Aceptar verde) y ranuras de tarjeta, comprobante y efectivo.
-- Cada pantalla define qué opción va en cada uno de los ocho renglones laterales; la opción se activa tocándola o con su botón físico. La posición de los botones se calcula en JavaScript para que siempre queden a la altura de su opción.
-- Comprobante como ticket impreso, ranura de efectivo que se ilumina tras un retiro, logotipo grande en la bienvenida.
-- En celular los botones laterales se ocultan y las opciones pasan a la pantalla.
-
-Las pruebas detectaron un error del nuevo diseño: al escribir con el teclado físico, el foco saltaba al primer botón habilitado, que era "Cancelar", y Enter lo activaba. Se corrigió moviendo el foco solo al cambiar de pantalla y dando prioridad a la acción principal. Dos pruebas se ajustaron a los nuevos textos y al nuevo lugar del botón Salir. Las 32 pruebas volvieron a pasar.
-
-## Prompt 7: que quepa completo en la ventana
-
-> No se ve la pantalla completa.
-
-Adjunté una captura donde el teclado quedaba cortado abajo del borde del navegador.
-
-**Qué produjo.** La carcasa mide unos 940 píxeles de alto y en una laptop no cabía. Se agregó una función que mide la carcasa y, si no cabe, la reduce proporcionalmente (con `transform: scale`) para que pantalla, botones laterales y teclado se vean siempre completos sin desplazarse. Se recalcula al cambiar el tamaño de la ventana y al cambiar de pantalla, y la alineación de los botones físicos toma en cuenta la escala. Se verificó en 1366 por 768, 1536 por 730 y 1920 por 969 píxeles. Las 32 pruebas siguen pasando.
-
-## Prompt 8: animaciones
-
-> Bien la lógica, ¿puedes agregarle animaciones?
-
-**Qué produjo.** Se agregaron animaciones con sentido físico, no decorativas: la tarjeta asoma en la ranura y entra al presionar "Insertar tarjeta" (la pantalla pide el NIP cuando termina de entrar), y sale parpadeando al cerrar la sesión; los billetes salen de la ranura de efectivo tras un retiro; el comprobante se imprime en pantalla y un papel cae de su ranura; cada cambio de pantalla entra con un desvanecimiento corto; las casillas del NIP y el monto reaccionan a cada dígito; la luz de la ranura de tarjeta parpadea en la bienvenida; y al usar un botón físico la opción en pantalla se ilumina un instante antes de ejecutarse. Todas se desactivan si el sistema tiene activada la opción de reducir movimiento. Las pruebas se ajustaron para esperar a que la tarjeta termine de entrar. Un primer intento colocaba los billetes al fondo del panel en vez de bajo la ranura; se corrigió envolviendo la ranura de efectivo igual que las demás. Las 32 pruebas pasan.
+```
+- README.md: qué es, las cuatro funciones, tres formas de ejecutar (GitHub Pages, abrir
+  index.html, servidor local), datos de prueba (NIP, saldo, cuentas destino), reglas de
+  operación, uso con teclado, estructura de archivos, capturas y cómo correr las pruebas.
+- docs/JUSTIFICACION.md: para cada decisión de diseño y de implementación, qué se hizo y por
+  qué, en primera persona y en lenguaje llano, sin citar teorías ni autores; al final las
+  limitaciones conocidas.
+- docs/PROMPTS.md: este archivo.
+- Repositorio público en GitHub con un historial limpio, sin dependencias en el repositorio
+  (node_modules ignorado) y publicado en GitHub Pages desde la raíz de la rama main con un
+  archivo .nojekyll.
+```
 
 ## Cómo reproducir el proceso
 
 1. Instalar Claude Code y abrir una terminal en una carpeta vacía.
-2. Pegar el Prompt 1 con la foto o el texto del enunciado.
-3. Responder las preguntas de orientación como en el Prompt 2, o con otras decisiones.
-4. Pedir que ejecute las pruebas y publique el repositorio.
-5. Revisar el resultado y pedir ajustes con nuevos prompts, como en los prompts 3, 5, 6, 7 y 8.
-
-Los prompts que se usen después de esta versión se agregan al final de este archivo.
+2. Pegar los prompts de las etapas 1 a 8 en orden, esperando a que cada etapa termine.
+3. Pedir que ejecute las pruebas después de las etapas 4, 5 y 6 y corregir lo que falle.
+4. Revisar el sitio publicado y pedir ajustes con prompts cortos si hace falta.
