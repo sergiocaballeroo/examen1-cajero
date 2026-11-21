@@ -34,7 +34,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-block: 20px;
+  padding-block: 16px;
   padding-inline: 16px;
   background: linear-gradient(180deg, #4a5160 0%, #2c313b 100%);
   color: var(--blanco);
@@ -58,6 +58,7 @@ body {
   flex-direction: column;
   gap: 26px;
   position: relative;
+  transform-origin: top center;
 }
 
 .atm__superior {

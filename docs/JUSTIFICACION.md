@@ -101,7 +101,7 @@ Lo hice así porque dieciocho dígitos seguidos son muy difíciles de revisar; e
 
 ### 1.16 Funciona en celular y no tiene modo oscuro
 
-En pantallas angostas los botones físicos laterales se ocultan y las opciones se convierten en botones grandes dentro de la pantalla, una debajo de otra; el teclado queda abajo. La pantalla del cajero siempre es azul, no cambia con el tema del sistema.
+En computadora, si la carcasa completa no cabe en la ventana (por ejemplo en una laptop de 1366 por 768), toda la carcasa se reduce proporcionalmente para que pantalla, botones laterales y teclado se vean sin desplazarse, como en un cajero real que siempre se ve entero. En pantallas angostas los botones físicos laterales se ocultan y las opciones se convierten en botones grandes dentro de la pantalla, una debajo de otra; el teclado queda abajo. La pantalla del cajero siempre es azul, no cambia con el tema del sistema.
 
 Lo hice así para que el examen se pueda revisar desde cualquier dispositivo. En un celular no caben los botones laterales, así que las opciones pasan a la pantalla, que es táctil. No puse modo oscuro porque un cajero real siempre se ve igual.
 

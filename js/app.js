@@ -31,6 +31,7 @@
 
   var temporizadores = { inactividad: null, aviso: null, cuenta: null, auto: null };
   var usaTeclado = false;
+  var escala = 1; // factor con el que se reduce la carcasa para que quepa completa en la ventana
 
   // ---------------------------------------------------------------- Utilidades
 
@@ -539,7 +540,7 @@
     var v = VISTAS[ui.vista]();
     $cuerpo.innerHTML = columna('izq', v.izq) + v.centro + columna('der', v.der);
     $cuerpo.dataset.vista = ui.vista;
-    alinearSoftkeys();
+    ajustarEscala();
     Array.prototype.forEach.call($teclado.querySelectorAll('[data-tecla]'), function (b) {
       var t = b.dataset.tecla;
       if (t === 'cancelar') b.disabled = ['bienvenida', 'despedida', 'bloqueada', 'procesando'].indexOf(ui.vista) !== -1;
@@ -565,8 +566,31 @@
       if (!slot || !contenedor.offsetParent) return;
       var rs = slot.getBoundingClientRect();
       var rc = contenedor.getBoundingClientRect();
-      boton.style.top = Math.round(rs.top + rs.height / 2 - rc.top - boton.offsetHeight / 2) + 'px';
+      // Las medidas vienen en píxeles de pantalla (ya escalados); se convierten a píxeles de diseño.
+      boton.style.top = Math.round((rs.top - rc.top) / escala + (rs.height / escala) / 2 - boton.offsetHeight / 2) + 'px';
     });
+  }
+
+  /**
+   * Reduce la carcasa completa si no cabe en la ventana, para que la pantalla, los botones
+   * laterales y el teclado se vean siempre sin desplazarse. En móvil no aplica (ahí se apila).
+   */
+  function ajustarEscala() {
+    var atm = document.querySelector('.atm');
+    if (window.innerWidth <= 900) {
+      atm.style.transform = '';
+      atm.style.marginBottom = '';
+      escala = 1;
+      return;
+    }
+    atm.style.transform = 'none';
+    atm.style.marginBottom = '0';
+    var alto = atm.offsetHeight;
+    var ancho = atm.offsetWidth;
+    escala = Math.min(1, (window.innerHeight - 32) / alto, (window.innerWidth - 32) / ancho);
+    atm.style.transform = 'scale(' + escala + ')';
+    atm.style.marginBottom = Math.round(-alto * (1 - escala)) + 'px';
+    alinearSoftkeys();
   }
 
   // ---------------------------------------------------------------- Eventos
@@ -656,8 +680,8 @@
     document.addEventListener('click', actividad, true);
     document.addEventListener('keydown', actividad, true);
 
-    window.addEventListener('resize', alinearSoftkeys);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(alinearSoftkeys);
+    window.addEventListener('resize', ajustarEscala);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(ajustarEscala);
 
     reloj();
     setInterval(reloj, 1000);

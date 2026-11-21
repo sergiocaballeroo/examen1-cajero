@@ -19,6 +19,7 @@ El método fue conversacional: yo planteé el problema y las decisiones de alto 
 | 4 | "Ábrelo por favor" | Sitio abierto en el navegador |
 | 5 | Diseño sobrio, elegante y creíble como banco | Rediseño visual con paleta, marca y tipografía |
 | 6 | "Esto no parece la interfaz de un banco" | Cajero clásico: pantalla con botones físicos laterales, teclado y ranuras |
+| 7 | "No se ve la pantalla completa", con captura | La carcasa se escala para caber entera en la ventana |
 
 ## Prompt 1: planteamiento del examen
 
@@ -112,12 +113,20 @@ Con esa decisión se rehicieron `index.html`, `css/estilos.css` y la parte de vi
 
 Las pruebas detectaron un error del nuevo diseño: al escribir con el teclado físico, el foco saltaba al primer botón habilitado, que era "Cancelar", y Enter lo activaba. Se corrigió moviendo el foco solo al cambiar de pantalla y dando prioridad a la acción principal. Dos pruebas se ajustaron a los nuevos textos y al nuevo lugar del botón Salir. Las 32 pruebas volvieron a pasar.
 
+## Prompt 7: que quepa completo en la ventana
+
+> No se ve la pantalla completa.
+
+Adjunté una captura donde el teclado quedaba cortado abajo del borde del navegador.
+
+**Qué produjo.** La carcasa mide unos 940 píxeles de alto y en una laptop no cabía. Se agregó una función que mide la carcasa y, si no cabe, la reduce proporcionalmente (con `transform: scale`) para que pantalla, botones laterales y teclado se vean siempre completos sin desplazarse. Se recalcula al cambiar el tamaño de la ventana y al cambiar de pantalla, y la alineación de los botones físicos toma en cuenta la escala. Se verificó en 1366 por 768, 1536 por 730 y 1920 por 969 píxeles. Las 32 pruebas siguen pasando.
+
 ## Cómo reproducir el proceso
 
 1. Instalar Claude Code y abrir una terminal en una carpeta vacía.
 2. Pegar el Prompt 1 con la foto o el texto del enunciado.
 3. Responder las preguntas de orientación como en el Prompt 2, o con otras decisiones.
 4. Pedir que ejecute las pruebas y publique el repositorio.
-5. Revisar el resultado y pedir ajustes con nuevos prompts, como en los prompts 3, 5 y 6.
+5. Revisar el resultado y pedir ajustes con nuevos prompts, como en los prompts 3, 5, 6 y 7.
 
 Los prompts que se usen después de esta versión se agregan al final de este archivo.
