@@ -16,7 +16,7 @@ page.on('console', m => { if (m.type() === 'error') consola.push(m.text()); });
 page.on('pageerror', e => consola.push(String(e)));
 
 const texto = async () => (await page.locator('#pantalla').innerText());
-const cap = (nombre) => page.screenshot({ path: path.join(CAPTURAS, nombre + '.png') });
+const cap = (nombre) => page.screenshot({ path: path.join(CAPTURAS, nombre + '.png'), fullPage: true });
 const tecla = async (t) => page.click(`[data-tecla="${t}"]`);
 const digitos = async (s) => { for (const d of s) await tecla(d); };
 
@@ -97,7 +97,7 @@ await digitos('072180009876543213');
 ok((await texto()).includes('Banorte'), 'detecta Banorte por la CLABE');
 await cap('12-deposito-clabe');
 await tecla('aceptar');
-ok((await texto()).includes('desea depositar'), 'pasa a monto de depósito');
+ok((await texto()).includes('monto a depositar'), 'pasa a monto de depósito');
 await digitos('99999'); await tecla('aceptar');
 ok((await texto()).includes('máximo por operación'), 'rechaza depósito > 20,000');
 for (let i = 0; i < 5; i++) await tecla('borrar');
@@ -122,7 +122,7 @@ await digitos('5000'); await tecla('aceptar');
 ok((await texto()).includes('Saldo insuficiente'), 'rechaza depósito mayor al saldo');
 
 // Salir y persistencia
-await page.click('#btn-salir');
+await tecla('cancelar'); await page.click('#btn-salir');
 ok((await texto()).includes('Gracias por su visita'), 'despedida');
 await cap('15-despedida');
 await page.reload();

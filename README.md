@@ -50,13 +50,13 @@ Las cuentas de prueba también aparecen dentro de la app, en el desplegable "Cue
 
 ## Uso con teclado
 
-Además de los botones en pantalla funciona el teclado físico: dígitos, Retroceso (borrar), Enter (aceptar) y Esc (cancelar). Todos los controles son accesibles con Tab y el foco es visible.
+Las opciones se activan tocándolas en la pantalla o con el botón físico que tienen al lado. Además funciona el teclado físico de la computadora: dígitos, Retroceso (borrar), Enter (aceptar) y Esc (cancelar). Todos los controles son accesibles con Tab y el foco es visible.
 
 ## Estructura
 
 ```
-index.html            Estructura: barra superior, pantalla, teclado numérico y aviso de inactividad
-css/estilos.css       Estilos tipo kiosco, responsivos
+index.html            Carcasa del cajero: botones laterales, pantalla, teclado numérico, ranuras y aviso de inactividad
+css/estilos.css       Estilos del cajero clásico, responsivos
 js/validaciones.js    CLABE (dígito verificador y catálogo de bancos), Luhn, formato de moneda
 js/banco.js           Reglas de negocio, cuenta simulada, persistencia en localStorage
 js/app.js             Máquina de estados de la interfaz, teclado, inactividad, comprobantes

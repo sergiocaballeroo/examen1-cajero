@@ -17,7 +17,8 @@ El método fue conversacional: yo planteé el problema y las decisiones de alto 
 | 2 | Respuestas a las preguntas de orientación | Toda la aplicación, las pruebas, la documentación y la publicación |
 | 3 | "La justificación ni yo la entiendo" | Justificación reescrita en lenguaje llano |
 | 4 | "Ábrelo por favor" | Sitio abierto en el navegador |
-| 5 | Diseño sobrio, elegante y creíble como banco | Rediseño visual completo con paleta, marca y tipografía |
+| 5 | Diseño sobrio, elegante y creíble como banco | Rediseño visual con paleta, marca y tipografía |
+| 6 | "Esto no parece la interfaz de un banco" | Cajero clásico: pantalla con botones físicos laterales, teclado y ranuras |
 
 ## Prompt 1: planteamiento del examen
 
@@ -94,12 +95,29 @@ Durante el rediseño pregunté:
 
 Respuesta del asistente: es un nombre inventado para no imitar a un banco real en un trabajo público; suena a institución financiera seria y el logotipo (un círculo con una línea horizontal) representa un meridiano. Se cambia en `js/banco.js` y en el encabezado de `index.html`.
 
+## Prompt 6: que de verdad parezca un cajero
+
+> Esto no parece la interfaz de un banco, la neta.
+
+**Qué produjo.** El asistente reconoció que las dos versiones anteriores se veían como una página web metida en un marco (tarjetas redondeadas, sombras, teclado como widget) y me ofreció tres direcciones con un boceto de cada una: pantalla azul a pantalla completa estilo BBVA, pantalla blanca con franja de color estilo Banorte o Santander, y cajero clásico con botones físicos a los lados. Elegí la tercera:
+
+> Cajero clásico con botones laterales.
+
+Con esa decisión se rehicieron `index.html`, `css/estilos.css` y la parte de vistas de `js/app.js`:
+
+- Carcasa gris metálico con la pantalla azul al centro, cuatro botones físicos a cada lado, teclado numérico abajo (teclas claras, Cancelar rojo, Borrar amarillo, Aceptar verde) y ranuras de tarjeta, comprobante y efectivo.
+- Cada pantalla define qué opción va en cada uno de los ocho renglones laterales; la opción se activa tocándola o con su botón físico. La posición de los botones se calcula en JavaScript para que siempre queden a la altura de su opción.
+- Comprobante como ticket impreso, ranura de efectivo que se ilumina tras un retiro, logotipo grande en la bienvenida.
+- En celular los botones laterales se ocultan y las opciones pasan a la pantalla.
+
+Las pruebas detectaron un error del nuevo diseño: al escribir con el teclado físico, el foco saltaba al primer botón habilitado, que era "Cancelar", y Enter lo activaba. Se corrigió moviendo el foco solo al cambiar de pantalla y dando prioridad a la acción principal. Dos pruebas se ajustaron a los nuevos textos y al nuevo lugar del botón Salir. Las 32 pruebas volvieron a pasar.
+
 ## Cómo reproducir el proceso
 
 1. Instalar Claude Code y abrir una terminal en una carpeta vacía.
 2. Pegar el Prompt 1 con la foto o el texto del enunciado.
 3. Responder las preguntas de orientación como en el Prompt 2, o con otras decisiones.
 4. Pedir que ejecute las pruebas y publique el repositorio.
-5. Revisar el resultado y pedir ajustes con nuevos prompts, como en los prompts 3 y 5.
+5. Revisar el resultado y pedir ajustes con nuevos prompts, como en los prompts 3, 5 y 6.
 
 Los prompts que se usen después de esta versión se agregan al final de este archivo.

@@ -1,7 +1,10 @@
 /*
  * Controlador de la interfaz del cajero.
- * Es una máquina de estados: cada "vista" se dibuja completa en #pantalla y el teclado
- * numérico de la derecha escribe en el campo activo de esa vista (NIP, monto o cuenta).
+ * Es una máquina de estados: cada "vista" devuelve el contenido del centro de la pantalla y
+ * las opciones que van en los ocho renglones laterales (cuatro a la izquierda, L1 a L4, y
+ * cuatro a la derecha, R1 a R4). Cada renglón queda alineado con un botón físico de la
+ * carcasa, de modo que la opción se puede activar tocándola en la pantalla o con el botón.
+ * El teclado numérico escribe en el campo activo de la vista (NIP, monto o cuenta).
  * Toda la lógica bancaria vive en banco.js; aquí solo hay presentación y flujo.
  */
 (function () {
@@ -10,7 +13,7 @@
   var REGLAS = Banco.REGLAS;
   var moneda = Validaciones.moneda;
 
-  var $pantalla, $teclado, $reloj, $btnSalir, $modal, $modalSegundos;
+  var $cuerpo, $teclado, $reloj, $modal, $modalSegundos, $ranuraEfectivo, $ranuraTarjeta;
 
   /** Estado de la interfaz (no del banco). */
   var ui = {
@@ -27,6 +30,7 @@
   };
 
   var temporizadores = { inactividad: null, aviso: null, cuenta: null, auto: null };
+  var usaTeclado = false;
 
   // ---------------------------------------------------------------- Utilidades
 
@@ -58,14 +62,13 @@
     if (vista === 'retiro-monto' || vista === 'deposito-monto') ui.campo = 'monto';
     if (vista === 'deposito-cuenta') ui.campo = 'cuenta';
     if (extra) Object.keys(extra).forEach(function (k) { ui[k] = extra[k]; });
-    render();
+    render(true);
   }
 
   // ---------------------------------------------------------------- Sesión e inactividad
 
   function iniciarSesion() {
     ui.sesion = true;
-    $btnSalir.hidden = false;
     reiniciarInactividad();
     ir('menu');
   }
@@ -75,7 +78,6 @@
     ui.destino = null;
     ui.operacion = null;
     ui.resultado = null;
-    $btnSalir.hidden = true;
     detenerInactividad();
     ir('despedida', { motivoSalida: motivo || '' });
     limpiarTemporizador('auto');
@@ -169,6 +171,7 @@
       case 'confirmar': ejecutarOperacion(); break;
       case 'saldo':
       case 'comprobante': ir('menu'); break;
+      case 'despedida': ir('bienvenida'); break;
       default: break;
     }
   }
@@ -262,21 +265,21 @@
         ir('menu', { error: r.mensaje });
       } else {
         ir('comprobante', { resultado: r });
+        if (op.tipo === 'retiro') {
+          $ranuraEfectivo.classList.add('ranura__boca--activa');
+          setTimeout(function () { $ranuraEfectivo.classList.remove('ranura__boca--activa'); }, 4000);
+        }
       }
       reiniciarInactividad();
     }, 1800);
   }
 
-  // ---------------------------------------------------------------- Vistas (HTML)
+  // ---------------------------------------------------------------- Vistas
 
-  /** Iconos en SVG (trazo de 2 px) para que el menú no dependa de tipografías ni emojis. */
-  var ICONOS = {
-    saldo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>',
-    retiro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="2"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 11v3M18 11v3"/></svg>',
-    deposito: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h12"/><path d="M12 7l5 5-5 5"/><path d="M20 5v14"/></svg>',
-    salir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M14 8l4 4-4 4"/><path d="M8 12h10"/></svg>',
-    cuenta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>'
-  };
+  /** Opción lateral. attrs: cadena de atributos data-*; clases: modificadores de .opcion. */
+  function op(texto, attrs, clases, deshabilitada) {
+    return '<button type="button" class="opcion ' + (clases || '') + '" ' + (attrs || '') + (deshabilitada ? ' disabled' : '') + '>' + texto + '</button>';
+  }
 
   function cabecera(titulo, subtitulo, eyebrow) {
     return (eyebrow ? '<p class="pantalla__eyebrow">' + eyebrow + '</p>' : '') +
@@ -289,23 +292,24 @@
   }
 
   function tarjetaCuenta() {
-    return '<p class="cuenta-chip">' + ICONOS.cuenta + '<span>Cuenta terminación ' + Banco.CUENTA.numero.slice(-4) + ' · ' + Banco.CUENTA.titular + '</span></p>';
+    return '<p class="cuenta-chip">Cuenta terminación ' + Banco.CUENTA.numero.slice(-4) + ' · ' + Banco.CUENTA.titular + '</p>';
   }
 
+  function indicacion(texto) {
+    return '<p class="indicacion">' + texto + '</p>';
+  }
+
+  var LOGO = '<svg class="logo-grande" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="5"/><path d="M10 32h44" stroke="currentColor" stroke-width="5"/></svg>';
+
   function vistaBienvenida() {
-    var t = Banco.CUENTA.tarjeta;
-    return cabecera('Bienvenido a ' + Banco.CUENTA.banco, 'Inserte su tarjeta para comenzar.') +
-      '<div class="centro">' +
-      '<div class="tarjeta-banco" aria-hidden="true">' +
-      '<span class="tarjeta-banco__marca">' + Banco.CUENTA.banco + '</span>' +
-      '<div class="tarjeta-banco__chip"></div>' +
-      '<div class="tarjeta-banco__numero">•••• •••• •••• ' + t.slice(-4) + '</div>' +
-      '<div class="tarjeta-banco__pie"><span>' + Banco.CUENTA.titular + '</span><span>Débito</span></div>' +
-      '</div>' +
-      '<button class="btn btn--primario btn--grande" data-accion="insertar">Insertar tarjeta</button>' +
-      '<p class="nota">Simulación académica. Cuenta de prueba con NIP 8420.</p>' +
-      '</div>' +
-      '<p class="pie-pantalla"><button class="enlace" data-accion="restablecer">Restablecer demostración</button></p>';
+    return {
+      centro: '<div class="centro centro--medio">' + LOGO +
+        cabecera('Bienvenido a ' + Banco.CUENTA.banco, 'Inserte su tarjeta para comenzar.') +
+        '<p class="nota">Simulación académica. Cuenta de prueba con NIP 8420.</p>' +
+        indicacion('Presione el botón "Insertar tarjeta" o la tecla Aceptar.') + '</div>',
+      izq: [null, null, null, op('Restablecer demostración', 'data-accion="restablecer"', 'opcion--suave')],
+      der: [null, null, null, op('Insertar tarjeta', 'data-accion="insertar"', 'opcion--der opcion--primaria')]
+    };
   }
 
   function vistaNip() {
@@ -313,25 +317,32 @@
     for (var i = 0; i < 4; i++) {
       puntos += '<span class="nip__caja' + (i < ui.entrada.length ? ' nip__caja--lleno' : '') + '">' + (i < ui.entrada.length ? '●' : '') + '</span>';
     }
-    return cabecera('Ingrese su NIP', 'Use el teclado numérico. Nadie debe ver su NIP.') +
-      '<div class="centro">' +
-      '<div class="nip" aria-label="NIP capturado: ' + ui.entrada.length + ' de 4 dígitos">' + puntos + '</div>' +
-      mensajeError() +
-      '<p class="nota">Intentos disponibles: ' + Banco.intentosRestantes() + '</p>' +
-      '<div class="acciones">' +
-      '<button class="btn btn--secundario" data-accion="cancelar">Cancelar</button>' +
-      '<button class="btn btn--primario" data-accion="aceptar"' + (ui.entrada.length < 4 ? ' disabled' : '') + '>Aceptar</button>' +
-      '</div></div>';
+    return {
+      centro: '<div class="centro">' + cabecera('Ingrese su NIP', 'Use el teclado numérico y cubra sus manos.') +
+        '<div class="nip" aria-label="NIP capturado: ' + ui.entrada.length + ' de 4 dígitos">' + puntos + '</div>' +
+        mensajeError() +
+        '<p class="nota">Intentos disponibles: ' + Banco.intentosRestantes() + '</p>' +
+        indicacion('Al terminar presione Aceptar.') + '</div>',
+      izq: [null, null, null, op('Cancelar', 'data-accion="cancelar"', 'opcion--peligro')],
+      der: [null, null, null, op('Aceptar', 'data-accion="aceptar"', 'opcion--der opcion--primaria', ui.entrada.length < 4)]
+    };
   }
 
   function vistaMenu() {
-    return cabecera('¿Qué operación desea realizar?', '') + tarjetaCuenta() + mensajeError() +
-      '<div class="menu">' +
-      '<button class="btn btn--tile" data-accion="ir" data-vista="saldo"><span class="tile__icono">' + ICONOS.saldo + '</span>Consulta de saldo<small>Saldo disponible y últimos movimientos</small></button>' +
-      '<button class="btn btn--tile" data-accion="ir" data-vista="retiro"><span class="tile__icono">' + ICONOS.retiro + '</span>Retiro de efectivo<small>Billetes de 100, 200 y 500</small></button>' +
-      '<button class="btn btn--tile" data-accion="ir" data-vista="deposito-tipo"><span class="tile__icono">' + ICONOS.deposito + '</span>Depósito a otra cuenta<small>Por CLABE o número de tarjeta</small></button>' +
-      '<button class="btn btn--tile btn--tile-salir" data-accion="salir"><span class="tile__icono">' + ICONOS.salir + '</span>Salir<small>Terminar sesión y retirar tarjeta</small></button>' +
-      '</div>';
+    return {
+      centro: '<div class="centro">' + cabecera('¿Qué operación desea realizar?', '') + tarjetaCuenta() + mensajeError() +
+        indicacion('Seleccione una opción con los botones laterales.') + '</div>',
+      izq: [
+        op('Consulta de saldo', 'data-accion="ir" data-vista="saldo"'),
+        op('Depósito a otra cuenta', 'data-accion="ir" data-vista="deposito-tipo"'),
+        null,
+        op('Salir', 'data-accion="salir" id="btn-salir"', 'opcion--peligro')
+      ],
+      der: [
+        op('Retiro de efectivo', 'data-accion="ir" data-vista="retiro"', 'opcion--der'),
+        null, null, null
+      ]
+    };
   }
 
   function vistaSaldo() {
@@ -339,43 +350,40 @@
     var filas = s.movimientos.map(function (m) {
       return '<tr><td>' + fechaCorta(m.fecha) + '</td><td>' + m.tipo + '</td><td class="num ' + (m.monto < 0 ? 'neg' : 'pos') + '">' + moneda(m.monto) + '</td></tr>';
     }).join('');
-    return cabecera('Su saldo', '', 'Consulta de saldo') + tarjetaCuenta() +
-      '<div class="saldo">' +
-      '<p class="saldo__etiqueta">Saldo disponible</p>' +
-      '<p class="saldo__monto">' + moneda(s.saldo) + '</p>' +
-      '<p class="nota">Disponible para retirar hoy en cajero: ' + moneda(s.disponibleHoy) + '</p>' +
-      '</div>' +
-      '<h2 class="pantalla__h2">Últimos movimientos</h2>' +
-      '<div class="tabla-scroll"><table class="movimientos"><tbody>' + filas + '</tbody></table></div>' +
-      '<div class="acciones">' +
-      '<button class="btn btn--secundario" data-accion="salir">Salir</button>' +
-      '<button class="btn btn--primario" data-accion="ir" data-vista="menu">Otra operación</button>' +
-      '</div>';
+    return {
+      centro: '<div class="centro">' + cabecera('Consulta de saldo', '') + tarjetaCuenta() +
+        '<div class="saldo"><p class="saldo__etiqueta">Saldo disponible</p><p class="saldo__monto">' + moneda(s.saldo) + '</p>' +
+        '<p class="nota">Disponible para retirar hoy en cajero: ' + moneda(s.disponibleHoy) + '</p></div>' +
+        '<div class="tabla-scroll"><table class="movimientos"><tbody>' + filas + '</tbody></table></div></div>',
+      izq: [null, null, null, op('Salir', 'data-accion="salir"', 'opcion--peligro')],
+      der: [null, null, null, op('Otra operación', 'data-accion="ir" data-vista="menu"', 'opcion--der opcion--primaria')]
+    };
   }
 
   function vistaRetiro() {
-    var botones = REGLAS.MONTOS_RAPIDOS.map(function (m) {
-      return '<button class="btn btn--monto" data-accion="monto-retiro" data-monto="' + m + '">' + moneda(m) + '</button>';
-    }).join('');
-    return cabecera('¿Cuánto desea retirar?', 'Elija un monto o escriba otro.', 'Retiro de efectivo') + mensajeError() +
-      '<div class="montos">' + botones +
-      '<button class="btn btn--monto btn--monto-otro" data-accion="ir" data-vista="retiro-monto">Otro monto</button>' +
-      '</div>' +
-      '<p class="nota">Múltiplos de ' + moneda(REGLAS.RETIRO_MULTIPLO) + '. Máximo ' + moneda(REGLAS.RETIRO_MAX_OPERACION) + ' por operación y ' + moneda(REGLAS.RETIRO_MAX_DIARIO) + ' al día.</p>' +
-      '<div class="acciones"><button class="btn btn--secundario" data-accion="ir" data-vista="menu">Regresar</button></div>';
+    var m = REGLAS.MONTOS_RAPIDOS;
+    function monto(i, der) {
+      return op(moneda(m[i]), 'data-accion="monto-retiro" data-monto="' + m[i] + '"', der ? 'opcion--der' : '');
+    }
+    return {
+      centro: '<div class="centro">' + cabecera('Retiro de efectivo', 'Seleccione el monto que desea retirar.') + mensajeError() +
+        '<p class="nota">Múltiplos de ' + moneda(REGLAS.RETIRO_MULTIPLO) + '. Máximo ' + moneda(REGLAS.RETIRO_MAX_OPERACION) + ' por operación y ' + moneda(REGLAS.RETIRO_MAX_DIARIO) + ' al día.</p>' +
+        indicacion('Billetes disponibles: 100, 200 y 500.') + '</div>',
+      izq: [monto(0), monto(2), monto(4), op('Regresar', 'data-accion="ir" data-vista="menu"', 'opcion--peligro')],
+      der: [monto(1, true), monto(3, true), monto(5, true), op('Otro monto', 'data-accion="ir" data-vista="retiro-monto"', 'opcion--der opcion--primaria')]
+    };
   }
 
-  function vistaMonto(titulo, ayuda, maximo, eyebrow) {
-    var monto = montoCapturado();
-    return cabecera(titulo, ayuda, eyebrow) +
-      '<div class="centro">' +
-      '<p class="captura' + (ui.entrada ? '' : ' captura--vacia') + '" aria-live="off">' + (ui.entrada ? moneda(monto) : '$ 0.00') + '</p>' +
-      mensajeError() +
-      '<p class="nota">' + maximo + '</p>' +
-      '<div class="acciones">' +
-      '<button class="btn btn--secundario" data-accion="cancelar">Cancelar</button>' +
-      '<button class="btn btn--primario" data-accion="aceptar"' + (ui.entrada ? '' : ' disabled') + '>Continuar</button>' +
-      '</div></div>';
+  function vistaMonto(titulo, ayuda, regla, eyebrow) {
+    return {
+      centro: '<div class="centro">' + cabecera(titulo, ayuda, eyebrow) +
+        '<p class="captura' + (ui.entrada ? '' : ' captura--vacia') + '">' + (ui.entrada ? moneda(montoCapturado()) : '$ 0.00') + '</p>' +
+        mensajeError() +
+        '<p class="nota">' + regla + '</p>' +
+        indicacion('Escriba el monto con el teclado y presione Aceptar.') + '</div>',
+      izq: [null, null, null, op('Cancelar', 'data-accion="cancelar"', 'opcion--peligro')],
+      der: [null, null, null, op('Continuar', 'data-accion="aceptar"', 'opcion--der opcion--primaria', !ui.entrada)]
+    };
   }
 
   function vistaRetiroMonto() {
@@ -384,13 +392,13 @@
   }
 
   function vistaDepositoTipo() {
-    return cabecera('¿Cómo identificará la cuenta destino?', 'Elija el tipo de número que tiene a la mano.', 'Depósito a otra cuenta') +
-      '<div class="menu menu--dos">' +
-      '<button class="btn btn--tile" data-accion="tipo-destino" data-tipo="CLABE"><span class="tile__icono">18</span>CLABE interbancaria<small>18 dígitos, cualquier banco</small></button>' +
-      '<button class="btn btn--tile" data-accion="tipo-destino" data-tipo="Tarjeta"><span class="tile__icono">16</span>Número de tarjeta<small>16 dígitos</small></button>' +
-      '</div>' +
-      '<p class="nota">El depósito se carga a su cuenta. El beneficiario lo recibe de inmediato.</p>' +
-      '<div class="acciones"><button class="btn btn--secundario" data-accion="ir" data-vista="menu">Regresar</button></div>';
+    return {
+      centro: '<div class="centro">' + cabecera('Depósito a otra cuenta', '¿Cómo identificará la cuenta destino?') +
+        '<p class="nota">El depósito se carga a su cuenta y el beneficiario lo recibe de inmediato.</p>' +
+        indicacion('Seleccione una opción con los botones laterales.') + '</div>',
+      izq: [op('CLABE interbancaria<small>18 dígitos, cualquier banco</small>', 'data-accion="tipo-destino" data-tipo="CLABE"'), null, null, op('Regresar', 'data-accion="ir" data-vista="menu"', 'opcion--peligro')],
+      der: [op('Número de tarjeta<small>16 dígitos</small>', 'data-accion="tipo-destino" data-tipo="Tarjeta"', 'opcion--der'), null, null, null]
+    };
   }
 
   function vistaDepositoCuenta() {
@@ -401,97 +409,99 @@
       banco = Validaciones.BANCOS[ui.entrada.slice(0, 3)] || 'Institución no reconocida';
     }
     var ayuda = Banco.CUENTAS_PRUEBA.filter(function (c) { return c.tipo === ui.tipoDestino; }).map(function (c) {
-      return '<li><button class="enlace" data-accion="llenar" data-numero="' + c.numero + '">' + Validaciones.agruparDigitos(c.numero) + '</button> · ' + c.banco + '</li>';
+      return '<li><button type="button" class="enlace" data-accion="llenar" data-numero="' + c.numero + '">' + Validaciones.agruparDigitos(c.numero) + '</button> · ' + c.banco + '</li>';
     }).join('');
-    return cabecera('Escriba la ' + (esClabe ? 'CLABE' : 'tarjeta') + ' destino', largo + ' dígitos.', 'Depósito a otra cuenta') +
-      '<div class="centro">' +
-      '<p class="captura captura--cuenta' + (ui.entrada ? '' : ' captura--vacia') + '">' + (ui.entrada ? Validaciones.agruparDigitos(ui.entrada) : '0000 0000 0000 0000' + (esClabe ? ' 00' : '')) + '</p>' +
-      '<p class="nota">' + ui.entrada.length + ' de ' + largo + ' dígitos' + (banco ? ' · ' + banco : '') + '</p>' +
-      mensajeError() +
-      '<div class="acciones">' +
-      '<button class="btn btn--secundario" data-accion="cancelar">Cancelar</button>' +
-      '<button class="btn btn--primario" data-accion="aceptar"' + (ui.entrada.length === largo ? '' : ' disabled') + '>Continuar</button>' +
-      '</div>' +
-      '<details class="ayuda"><summary>Cuentas de prueba para la demostración</summary><ul>' + ayuda + '</ul></details>' +
-      '</div>';
+    return {
+      centro: '<div class="centro">' + cabecera('Escriba la ' + (esClabe ? 'CLABE' : 'tarjeta') + ' destino', largo + ' dígitos.', 'Depósito a otra cuenta') +
+        '<p class="captura captura--cuenta' + (ui.entrada ? '' : ' captura--vacia') + '">' + (ui.entrada ? Validaciones.agruparDigitos(ui.entrada) : '0000 0000 0000 0000' + (esClabe ? ' 00' : '')) + '</p>' +
+        '<p class="nota">' + ui.entrada.length + ' de ' + largo + ' dígitos' + (banco ? ' · ' + banco : '') + '</p>' +
+        mensajeError() +
+        '<details class="ayuda"><summary>Cuentas de prueba para la demostración</summary><ul>' + ayuda + '</ul></details>' +
+        '</div>',
+      izq: [null, null, null, op('Cancelar', 'data-accion="cancelar"', 'opcion--peligro')],
+      der: [null, null, null, op('Continuar', 'data-accion="aceptar"', 'opcion--der opcion--primaria', ui.entrada.length !== largo)]
+    };
   }
 
   function vistaDepositoMonto() {
     var d = ui.destino;
-    return cabecera('¿Cuánto desea depositar?', 'Destino: ' + d.tipo + ' ' + Validaciones.agruparDigitos(d.numero) + ' (' + d.banco + ')', 'Depósito a otra cuenta') +
-      '<div class="centro">' +
-      '<p class="captura' + (ui.entrada ? '' : ' captura--vacia') + '">' + (ui.entrada ? moneda(montoCapturado()) : '$ 0.00') + '</p>' +
-      mensajeError() +
-      '<p class="nota">Hasta ' + moneda(REGLAS.DEPOSITO_MAX_OPERACION) + ' por operación. Se cargará a su cuenta.</p>' +
-      '<div class="acciones">' +
-      '<button class="btn btn--secundario" data-accion="cancelar">Cancelar</button>' +
-      '<button class="btn btn--primario" data-accion="aceptar"' + (ui.entrada ? '' : ' disabled') + '>Continuar</button>' +
-      '</div></div>';
+    return vistaMonto('Escriba el monto a depositar', 'Destino: ' + d.tipo + ' ' + Validaciones.agruparDigitos(d.numero) + ' (' + d.banco + ')',
+      'Hasta ' + moneda(REGLAS.DEPOSITO_MAX_OPERACION) + ' por operación. Se cargará a su cuenta.', 'Depósito a otra cuenta');
   }
 
   function vistaConfirmar() {
-    var op = ui.operacion;
-    var filas = '<tr><th>Operación</th><td>' + (op.tipo === 'retiro' ? 'Retiro de efectivo' : 'Depósito a otra cuenta') + '</td></tr>' +
-      '<tr><th>Monto</th><td class="num">' + moneda(op.monto) + '</td></tr>';
-    if (op.tipo === 'deposito') {
+    var o = ui.operacion;
+    var filas = '<tr><th>Operación</th><td>' + (o.tipo === 'retiro' ? 'Retiro de efectivo' : 'Depósito a otra cuenta') + '</td></tr>' +
+      '<tr><th>Monto</th><td>' + moneda(o.monto) + '</td></tr>';
+    if (o.tipo === 'deposito') {
       filas += '<tr><th>Destino</th><td>' + ui.destino.tipo + ' ' + Validaciones.agruparDigitos(ui.destino.numero) + '<br><small>' + ui.destino.banco + '</small></td></tr>';
     }
     filas += '<tr><th>Cargo a</th><td>Cuenta terminación ' + Banco.CUENTA.numero.slice(-4) + '</td></tr>';
-    return cabecera('Confirme la operación', 'Revise los datos antes de continuar.', op.tipo === 'retiro' ? 'Retiro de efectivo' : 'Depósito a otra cuenta') +
-      '<table class="resumen"><tbody>' + filas + '</tbody></table>' +
-      '<div class="acciones">' +
-      '<button class="btn btn--secundario" data-accion="cancelar">Cancelar</button>' +
-      '<button class="btn btn--confirmar" data-accion="aceptar">Confirmar</button>' +
-      '</div>';
+    return {
+      centro: '<div class="centro">' + cabecera('Confirme la operación', 'Revise los datos antes de continuar.', o.tipo === 'retiro' ? 'Retiro de efectivo' : 'Depósito a otra cuenta') +
+        '<table class="resumen"><tbody>' + filas + '</tbody></table>' +
+        indicacion('¿Son correctos los datos?') + '</div>',
+      izq: [null, null, null, op('No, cancelar', 'data-accion="cancelar"', 'opcion--peligro')],
+      der: [null, null, null, op('Sí, confirmar', 'data-accion="aceptar"', 'opcion--der opcion--primaria')]
+    };
   }
 
   function vistaProcesando() {
     var texto = ui.operacion && ui.operacion.tipo === 'retiro' ? 'Contando billetes...' : 'Enviando el depósito...';
-    return '<div class="centro procesando" aria-busy="true"><div class="spinner" aria-hidden="true"></div><p class="pantalla__titulo">Procesando</p><p class="nota">' + texto + '</p></div>';
+    return {
+      centro: '<div class="centro centro--medio" aria-busy="true"><div class="spinner" aria-hidden="true"></div><h1 class="pantalla__titulo">Procesando</h1><p class="nota">' + texto + '</p></div>',
+      izq: [null, null, null, null],
+      der: [null, null, null, null]
+    };
   }
 
   function vistaComprobante() {
     var r = ui.resultado;
-    var op = ui.operacion;
+    var o = ui.operacion;
     var filas = '<tr><th>Folio</th><td>' + r.folio + '</td></tr>' +
       '<tr><th>Fecha</th><td>' + fechaLarga(r.fecha) + '</td></tr>' +
-      '<tr><th>Operación</th><td>' + (op.tipo === 'retiro' ? 'Retiro de efectivo' : 'Depósito a otra cuenta') + '</td></tr>';
-    if (op.tipo === 'deposito') {
-      filas += '<tr><th>Destino</th><td>' + ui.destino.tipo + ' terminación ' + ui.destino.numero.slice(-4) + ' (' + r.banco + ')</td></tr>';
+      '<tr><th>Cuenta</th><td>**** ' + Banco.CUENTA.numero.slice(-4) + '</td></tr>' +
+      '<tr><th>Operación</th><td>' + (o.tipo === 'retiro' ? 'Retiro de efectivo' : 'Depósito a otra cuenta') + '</td></tr>';
+    if (o.tipo === 'deposito') {
+      filas += '<tr><th>Destino</th><td>' + ui.destino.tipo + ' **** ' + ui.destino.numero.slice(-4) + '</td></tr>' +
+        '<tr><th>Banco</th><td>' + r.banco + '</td></tr>';
     }
-    filas += '<tr><th>Monto</th><td class="num">' + moneda(op.monto) + '</td></tr>' +
-      '<tr><th>Saldo anterior</th><td class="num">' + moneda(r.saldoAnterior) + '</td></tr>' +
-      '<tr><th>Saldo actual</th><td class="num"><strong>' + moneda(r.saldoNuevo) + '</strong></td></tr>';
+    filas += '<tr><th>Monto</th><td>' + moneda(o.monto) + '</td></tr>' +
+      '<tr><th>Saldo anterior</th><td>' + moneda(r.saldoAnterior) + '</td></tr>' +
+      '<tr class="ticket__total"><th>Saldo actual</th><td>' + moneda(r.saldoNuevo) + '</td></tr>';
     var billetes = '';
-    if (op.tipo === 'retiro') {
+    if (o.tipo === 'retiro') {
       billetes = '<p class="billetes">Retire su efectivo: ' + r.billetes.map(function (b) {
         return b.cantidad + ' × $' + b.denominacion;
       }).join(', ') + '</p>';
     }
-    return cabecera('Operación exitosa', 'Conserve su comprobante.', op.tipo === 'retiro' ? 'Retiro de efectivo' : 'Depósito a otra cuenta') +
-      billetes +
-      '<table class="resumen resumen--ticket"><tbody>' + filas + '</tbody></table>' +
-      '<div class="acciones">' +
-      '<button class="btn btn--secundario" data-accion="salir">Salir</button>' +
-      '<button class="btn btn--primario" data-accion="ir" data-vista="menu">Otra operación</button>' +
-      '</div>';
+    return {
+      centro: '<div class="centro">' + cabecera('Operación exitosa', o.tipo === 'retiro' ? 'Tome su efectivo y su comprobante.' : 'Tome su comprobante.') +
+        billetes +
+        '<div class="ticket resumen--ticket"><p class="ticket__cabecera">' + Banco.CUENTA.banco.toUpperCase() + '</p><p class="ticket__sub">Sucursal Centro · Terminal 0412</p>' +
+        '<table><tbody>' + filas + '</tbody></table><p class="ticket__pie">Conserve este comprobante</p></div></div>',
+      izq: [null, null, null, op('Salir', 'data-accion="salir"', 'opcion--peligro')],
+      der: [null, null, null, op('Otra operación', 'data-accion="ir" data-vista="menu"', 'opcion--der opcion--primaria')]
+    };
   }
 
   function vistaBloqueada() {
-    return cabecera('Tarjeta retenida', 'Se agotaron los intentos para ingresar el NIP.') +
-      '<div class="centro">' +
-      '<p class="alerta" role="alert">Por su seguridad la tarjeta fue bloqueada. Acuda a su sucursal o llame al centro de atención para desbloquearla.</p>' +
-      '<p class="nota">Centro de atención: 55 0000 0000 (simulado)</p>' +
-      '</div>' +
-      '<p class="pie-pantalla"><button class="enlace" data-accion="restablecer">Restablecer demostración</button></p>';
+    return {
+      centro: '<div class="centro centro--medio">' + cabecera('Tarjeta retenida', 'Se agotaron los intentos para ingresar el NIP.') +
+        '<p class="alerta" role="alert">Por su seguridad la tarjeta fue bloqueada. Acuda a su sucursal o llame al centro de atención para desbloquearla.</p>' +
+        '<p class="nota">Atención a clientes: 800 000 0000 (simulado)</p></div>',
+      izq: [null, null, null, op('Restablecer demostración', 'data-accion="restablecer"', 'opcion--suave')],
+      der: [null, null, null, null]
+    };
   }
 
   function vistaDespedida() {
-    return cabecera('Gracias por su visita', 'No olvide retirar su tarjeta.') +
-      '<div class="centro">' +
-      (ui.motivoSalida ? '<p class="alerta" role="alert">' + ui.motivoSalida + '</p>' : '') +
-      '<button class="btn btn--primario" data-accion="ir" data-vista="bienvenida">Terminar</button>' +
-      '</div>';
+    return {
+      centro: '<div class="centro centro--medio">' + LOGO + cabecera('Gracias por su visita', 'No olvide retirar su tarjeta.') +
+        (ui.motivoSalida ? '<p class="alerta" role="alert">' + ui.motivoSalida + '</p>' : '') + '</div>',
+      izq: [null, null, null, null],
+      der: [null, null, null, op('Terminar', 'data-accion="ir" data-vista="bienvenida"', 'opcion--der opcion--primaria')]
+    };
   }
 
   var VISTAS = {
@@ -511,28 +521,67 @@
     'despedida': vistaDespedida
   };
 
-  function render() {
-    $pantalla.innerHTML = VISTAS[ui.vista]();
-    $pantalla.dataset.vista = ui.vista;
-    $teclado.classList.toggle('teclado--inactivo', !ui.campo);
+  function columna(lado, opciones) {
+    var html = '<div class="columna columna--' + lado + '">';
+    for (var i = 0; i < 4; i++) {
+      var slot = (lado === 'izq' ? 'L' : 'R') + (i + 1);
+      if (opciones[i]) {
+        html += opciones[i].replace('class="opcion', 'data-slot="' + slot + '" class="opcion');
+      } else {
+        html += '<span class="opcion-vacia" data-slot="' + slot + '"></span>';
+      }
+    }
+    return html + '</div>';
+  }
+
+  /** Dibuja la vista actual. enfocar: true solo al cambiar de pantalla, para no mover el foco en cada dígito. */
+  function render(enfocar) {
+    var v = VISTAS[ui.vista]();
+    $cuerpo.innerHTML = columna('izq', v.izq) + v.centro + columna('der', v.der);
+    $cuerpo.dataset.vista = ui.vista;
+    alinearSoftkeys();
     Array.prototype.forEach.call($teclado.querySelectorAll('[data-tecla]'), function (b) {
       var t = b.dataset.tecla;
       if (t === 'cancelar') b.disabled = ['bienvenida', 'despedida', 'bloqueada', 'procesando'].indexOf(ui.vista) !== -1;
-      else if (t === 'aceptar') b.disabled = ['despedida', 'bloqueada', 'procesando', 'menu', 'retiro', 'deposito-tipo'].indexOf(ui.vista) !== -1;
+      else if (t === 'aceptar') b.disabled = ['bloqueada', 'procesando', 'menu', 'retiro', 'deposito-tipo'].indexOf(ui.vista) !== -1;
       else b.disabled = !ui.campo;
     });
     // El foco se mueve a la acción principal solo si la persona navega con teclado; con mouse o
     // pantalla táctil no se dibuja el anillo de foco porque no aporta y ensucia el diseño.
-    if (!usaTeclado) return;
-    var foco = $pantalla.querySelector('[autofocus], .btn--primario:not([disabled]), .btn--confirmar, .btn--tile');
+    if (!usaTeclado || !enfocar) return;
+    var foco = $cuerpo.querySelector('.opcion--primaria:not([disabled])') || $cuerpo.querySelector('.opcion:not([disabled])');
     if (foco) foco.focus({ preventScroll: true });
   }
 
-  var usaTeclado = false;
+  /**
+   * Coloca cada botón físico lateral a la altura exacta del renglón de opción que le corresponde.
+   * Se recalcula en cada render y al cambiar el tamaño de la ventana, porque la pantalla crece
+   * con el contenido (por ejemplo, con el comprobante).
+   */
+  function alinearSoftkeys() {
+    Array.prototype.forEach.call(document.querySelectorAll('.softkey'), function (boton) {
+      var slot = $cuerpo.querySelector('[data-slot="' + boton.dataset.slot + '"]');
+      var contenedor = boton.parentNode;
+      if (!slot || !contenedor.offsetParent) return;
+      var rs = slot.getBoundingClientRect();
+      var rc = contenedor.getBoundingClientRect();
+      boton.style.top = Math.round(rs.top + rs.height / 2 - rc.top - boton.offsetHeight / 2) + 'px';
+    });
+  }
 
   // ---------------------------------------------------------------- Eventos
 
+  function presionarSoftkey(boton) {
+    var slot = boton.dataset.slot;
+    var objetivo = $cuerpo.querySelector('.opcion[data-slot="' + slot + '"]');
+    boton.classList.add('softkey--presionado');
+    setTimeout(function () { boton.classList.remove('softkey--presionado'); }, 120);
+    if (objetivo && !objetivo.disabled) objetivo.click();
+  }
+
   function alHacerClic(ev) {
+    var softkey = ev.target.closest('.softkey');
+    if (softkey) { presionarSoftkey(softkey); return; }
     var el = ev.target.closest('[data-accion], [data-tecla]');
     if (!el || el.disabled) return;
     if (el.dataset.tecla) {
@@ -592,12 +641,13 @@
   }
 
   function iniciar() {
-    $pantalla = document.getElementById('pantalla');
+    $cuerpo = document.getElementById('pantalla-cuerpo');
     $teclado = document.getElementById('teclado');
     $reloj = document.getElementById('reloj');
-    $btnSalir = document.getElementById('btn-salir');
     $modal = document.getElementById('modal-inactividad');
     $modalSegundos = document.getElementById('modal-segundos');
+    $ranuraEfectivo = document.getElementById('ranura-efectivo');
+    $ranuraTarjeta = document.getElementById('ranura-tarjeta');
 
     document.addEventListener('click', alHacerClic);
     document.addEventListener('keydown', alTeclear);
@@ -605,7 +655,9 @@
     document.addEventListener('pointerdown', function () { usaTeclado = false; }, true);
     document.addEventListener('click', actividad, true);
     document.addEventListener('keydown', actividad, true);
-    $btnSalir.addEventListener('click', function () { cerrarSesion(''); });
+
+    window.addEventListener('resize', alinearSoftkeys);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(alinearSoftkeys);
 
     reloj();
     setInterval(reloj, 1000);

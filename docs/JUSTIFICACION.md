@@ -7,11 +7,11 @@ Para cada decisión explico qué hice y por qué lo hice así. Al final están l
 
 ## 1. Decisiones de diseño (cómo se ve y cómo se usa)
 
-### 1.1 Se parece a un cajero de verdad: pantalla a la izquierda, teclado numérico a la derecha
+### 1.1 Es un cajero clásico: pantalla al centro, cuatro botones físicos a cada lado y teclado abajo
 
-Hice que la página se vea como un cajero: una pantalla y a un lado un teclado con números y tres teclas de color, Borrar (amarillo), Cancelar (rojo) y Aceptar (verde).
+Hice que la página reproduzca la carcasa completa de un cajero: una pantalla azul al centro, cuatro botones físicos a la izquierda y cuatro a la derecha, un teclado numérico metálico abajo con las teclas Cancelar (rojo), Borrar (amarillo) y Aceptar (verde), y las ranuras de tarjeta, comprobante y efectivo. Las opciones de cada pantalla aparecen en los renglones laterales, con una flecha que apunta al botón físico que las activa; también se pueden tocar directamente en la pantalla.
 
-Lo hice así porque todo el mundo ya sabe usar un cajero. Si la interfaz se parece a lo que la gente conoce, no tiene que aprender nada nuevo. Los colores del teclado son los mismos que usan los cajeros reales, así que el usuario sabe cuál tecla confirma y cuál cancela sin leer.
+Lo hice así porque es la forma de cajero que todo el mundo reconoce de inmediato. Probé antes dos versiones más parecidas a una página web (tarjetas, sombras, teclado como widget) y no se sentían como un banco. Con los botones laterales, el teclado abajo y las ranuras, nadie duda de qué es. Además los botones físicos tienen un beneficio real: una persona con poca visión o que no confía en la pantalla táctil puede operar todo con los botones y el teclado.
 
 Descarté hacer un formulario normal de página web con cajitas de texto, porque no se parece a un cajero, deja pegar texto y escribir letras, y el examen pide un cajero.
 
@@ -27,23 +27,23 @@ El texto base es de 18 píxeles (en una página normal son 16), los botones mide
 
 Lo hice así porque un botón grande es más fácil de atinar, sobre todo en pantalla táctil, y porque el cajero lo usa gente de todas las edades, incluyendo personas que ven poco. Verifiqué que los colores tengan contraste alto para que se lean bien incluso con reflejos.
 
-### 1.4 Paleta sobria: azul marino, grises fríos y un toque dorado
+### 1.4 Colores: pantalla azul profundo con texto blanco, carcasa gris metálico
 
-La base de color es azul marino (#12325e y tonos más oscuros para el marco), las superficies son blancas y gris muy claro, y el único acento es un dorado apagado (#b8963e) que aparece en detalles pequeños: la línea superior de la pantalla, el logotipo, el chip de la tarjeta, las etiquetas de sección y el anillo de foco. El verde y el rojo solo se usan con significado: verde para confirmar y para abonos, rojo para cancelar y para avisos.
+La pantalla es azul profundo (#0b2a5b, más oscuro hacia abajo) con texto blanco; la carcasa es gris claro con degradado metálico; el teclado es gris oscuro con teclas claras; y solo tres colores tienen significado: verde para Aceptar y confirmar, rojo para Cancelar y avisos, amarillo para Borrar y para las flechas que señalan las opciones.
 
-Lo hice así después de revisar guías de diseño para banca y fintech: el azul marino es el color que más se asocia con estabilidad y confianza, y es el que usan la mayoría de los bancos. El dorado da sensación de institución seria, pero solo funciona si se usa poco (como un detalle, no como pintura); si se usara en fondos se vería de mal gusto. Decidí no usar los colores de un banco real (el azul de BBVA, el rojo de Banorte o Santander) porque el trabajo se publica y no quería imitar una marca existente; en su lugar inventé "Banco Meridiano", con un logotipo sencillo (un círculo con una línea horizontal, como un meridiano) que se ve en el encabezado y en la pestaña del navegador.
+Lo hice así después de revisar guías de diseño para banca y capturas de cajeros reales: la mayoría usa pantalla azul con texto blanco porque se lee bien con reflejos y transmite seriedad, y los colores del teclado son un estándar de la industria. Decidí no usar los colores de un banco real (el azul de BBVA, el rojo de Banorte o Santander) porque el trabajo se publica y no quería imitar una marca existente; en su lugar inventé "Banco Meridiano", con un logotipo sencillo (un círculo con una línea horizontal, como un meridiano) que se ve en la pantalla, en el comprobante y en la pestaña del navegador.
 
-### 1.5 Tipografía: Inter para el texto y Manrope para los títulos
+### 1.5 Tipografía: Inter en toda la pantalla y monoespaciada en el comprobante
 
-El texto, los montos y las tablas usan Inter; los títulos y las cantidades grandes usan Manrope. Ambas se cargan de Google Fonts; si no hay internet, la app usa Segoe UI o la fuente del sistema y se ve igual de ordenada.
+Toda la pantalla usa Inter, cargada de Google Fonts; si no hay internet, se usa Segoe UI o la fuente del sistema y se ve igual de ordenada. El comprobante usa una fuente monoespaciada (Consolas o Courier New).
 
-Lo hice así porque Inter está diseñada para pantallas y tiene números de ancho fijo, lo que hace que las cantidades se alineen en columnas. Manrope es más geométrica y da personalidad a los títulos sin perder seriedad. Dos fuentes son suficientes: más se vería desordenado.
+Lo hice así porque Inter está diseñada para pantallas y tiene números de ancho fijo, así que las cantidades y los dígitos de la CLABE se alinean bien. La monoespaciada del comprobante es la misma que usan los tickets impresos, y eso ayuda a que se sienta real. Una sola fuente para la pantalla es suficiente; más se vería desordenado.
 
 ### 1.6 Detalles que hacen creíble que es un banco
 
-El encabezado muestra el nombre del banco, el tipo de terminal y una sucursal; la pantalla de bienvenida muestra una tarjeta de débito ilustrada con chip y los últimos cuatro dígitos; el pie del cajero tiene el aviso "Cubra el teclado al escribir su NIP" y una línea de atención; cada paso de retiro o depósito lleva arriba una etiqueta pequeña en dorado que dice en qué operación se está; y el comprobante usa una fuente monoespaciada con borde punteado, como un ticket impreso.
+La pantalla tiene arriba el logotipo del banco y la hora; abajo del cajero están las ranuras de tarjeta (con una luz verde), de comprobante y de efectivo; la ranura de efectivo se ilumina unos segundos al terminar un retiro; el comprobante se muestra como un ticket blanco con borde dentado, folio, fecha, cuenta y saldos; cada paso de retiro o depósito lleva arriba una etiqueta pequeña que dice en qué operación se está; y la carcasa tiene el aviso "Cubra el teclado al escribir su NIP".
 
-Lo hice así porque el examen pide una interfaz que se sienta real. Estos elementos son los que una persona reconoce de un cajero de verdad, y además sirven: la etiqueta de operación evita perderse en pasos intermedios y el aviso del NIP refuerza la seguridad.
+Lo hice así porque el examen pide una interfaz que se sienta real, y estos son los elementos que una persona reconoce de un cajero de verdad. Además sirven: la etiqueta de operación evita perderse en pasos intermedios, la ranura iluminada indica dónde tomar el dinero y el aviso del NIP refuerza la seguridad.
 
 ### 1.7 El NIP se ve como puntos en cuatro casillas
 
@@ -101,9 +101,9 @@ Lo hice así porque dieciocho dígitos seguidos son muy difíciles de revisar; e
 
 ### 1.16 Funciona en celular y no tiene modo oscuro
 
-En pantallas angostas el teclado se pasa abajo de la pantalla y el menú queda en una columna. La pantalla del cajero siempre es clara, no cambia con el tema del sistema.
+En pantallas angostas los botones físicos laterales se ocultan y las opciones se convierten en botones grandes dentro de la pantalla, una debajo de otra; el teclado queda abajo. La pantalla del cajero siempre es azul, no cambia con el tema del sistema.
 
-Lo hice así para que el examen se pueda revisar desde cualquier dispositivo. No puse modo oscuro porque un cajero real siempre se ve igual, y porque mantener dos esquemas de color implica revisar el contraste dos veces.
+Lo hice así para que el examen se pueda revisar desde cualquier dispositivo. En un celular no caben los botones laterales, así que las opciones pasan a la pantalla, que es táctil. No puse modo oscuro porque un cajero real siempre se ve igual.
 
 ### 1.17 Se puede usar con el teclado físico y con lector de pantalla
 
@@ -133,7 +133,7 @@ Lo hice así para que las reglas se puedan cambiar en un solo lugar (el objeto `
 
 ### 2.4 La interfaz es una máquina de estados que redibuja la pantalla completa
 
-El programa guarda en qué pantalla está y unos cuantos datos (dígitos escritos, mensaje de error, cuenta destino, operación pendiente). Cada vez que algo cambia, vuelve a generar todo el HTML de la pantalla.
+El programa guarda en qué pantalla está y unos cuantos datos (dígitos escritos, mensaje de error, cuenta destino, operación pendiente). Cada pantalla devuelve tres cosas: el contenido del centro y las opciones de los cuatro renglones izquierdos y los cuatro derechos. Cada vez que algo cambia, vuelve a generar todo el HTML de la pantalla y recalcula la posición de los botones físicos para que queden a la altura exacta de su opción, incluso cuando la pantalla crece (por ejemplo con el comprobante).
 
 Lo hice así porque con catorce pantallas pequeñas es más simple y más seguro redibujar todo que ir actualizando pedazos: nunca queda un botón activo de la pantalla anterior ni un mensaje de error viejo. Redibujar una pantalla de este tamaño es instantáneo.
 
