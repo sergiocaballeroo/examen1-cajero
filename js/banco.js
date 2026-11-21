@@ -30,7 +30,7 @@
   /** Cuenta del titular (datos simulados). CLABE y tarjeta tienen dígito verificador válido. */
   var CUENTA = {
     titular: 'SERGIO JAIR CABALLERO MARTINEZ',
-    banco: 'Banco Demo',
+    banco: 'Banco Meridiano',
     numero: '0123456789',
     clabe: '012180001234567899',
     tarjeta: '4152313412344827'

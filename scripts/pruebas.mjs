@@ -97,7 +97,7 @@ await digitos('072180009876543213');
 ok((await texto()).includes('Banorte'), 'detecta Banorte por la CLABE');
 await cap('12-deposito-clabe');
 await tecla('aceptar');
-ok((await texto()).includes('Monto a depositar'), 'pasa a monto de depósito');
+ok((await texto()).includes('desea depositar'), 'pasa a monto de depósito');
 await digitos('99999'); await tecla('aceptar');
 ok((await texto()).includes('máximo por operación'), 'rechaza depósito > 20,000');
 for (let i = 0; i < 5; i++) await tecla('borrar');

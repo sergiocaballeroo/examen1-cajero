@@ -59,3 +59,27 @@ Las correcciones no vinieron de prompts adicionales sino de las pruebas automati
 4. Pedir que ejecute pruebas y publique el repositorio.
 
 Los prompts posteriores a la primera publicación (ajustes pedidos después de revisar el sitio) se agregan al final de este archivo conforme ocurren.
+
+## Prompt 3: la justificación en lenguaje llano
+
+> Espera el justificacion ni yo lo entiendo euristicas de nielsen y metafora de quiosko? dedonde sacas todo eso?
+
+**Resultado.** La primera versión de `JUSTIFICACION.md` citaba heurísticas de Nielsen, la ley de Fitts y criterios WCAG. Se reescribió completa en primera persona y lenguaje cotidiano: para cada decisión, qué se hizo y por qué, sin teoría, de modo que el autor pueda explicarla con sus palabras.
+
+## Prompt 4: abrir el sitio
+
+> abrelo por favor
+
+**Resultado.** El asistente abrió https://sergiocaballeroo.github.io/examen1-cajero/ en el navegador.
+
+## Prompt 5: rediseño visual sobrio y creíble
+
+> puedes buscar una interfaz que use colores o una paleta de colores seria, que el diseño sea sobrio y elegante pero lo suficientemente real para creer que es un banco o asi? busca todo lo necesario por favor como tipo que tu veas para que sea posible que sea un buen proyecto a nivel diseño
+
+**Resultado.** El asistente buscó en la web referencias de interfaces de cajero y guías de color para banca y fintech. Conclusiones aplicadas: azul marino como base de confianza, superficies blancas y grises fríos, dorado solo como acento pequeño, verde y rojo únicamente con significado. Se reescribió `css/estilos.css` completo, se agregó la marca ficticia "Banco Meridiano" con logotipo en SVG, tipografías Inter y Manrope (Google Fonts con respaldo a fuentes del sistema), tarjeta de débito ilustrada en la bienvenida, iconos SVG en el menú, etiquetas de operación en dorado en los pasos intermedios, pie del cajero con aviso de seguridad y comprobante estilo ticket. Una prueba cambió porque el título "Monto a depositar" pasó a "¿Cuánto desea depositar?". Las 32 pruebas volvieron a pasar.
+
+Pregunta intermedia del autor:
+
+> por que meridiano?
+
+Respuesta: es un nombre inventado para no imitar a un banco real en un trabajo público; suena a institución financiera seria y el logotipo (círculo con línea horizontal) representa un meridiano. Se cambia en `js/banco.js` y en el encabezado de `index.html`.

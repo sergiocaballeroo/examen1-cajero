@@ -269,8 +269,18 @@
 
   // ---------------------------------------------------------------- Vistas (HTML)
 
-  function cabecera(titulo, subtitulo) {
-    return '<h1 class="pantalla__titulo">' + titulo + '</h1>' +
+  /** Iconos en SVG (trazo de 2 px) para que el menú no dependa de tipografías ni emojis. */
+  var ICONOS = {
+    saldo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>',
+    retiro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="2"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 11v3M18 11v3"/></svg>',
+    deposito: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h12"/><path d="M12 7l5 5-5 5"/><path d="M20 5v14"/></svg>',
+    salir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M14 8l4 4-4 4"/><path d="M8 12h10"/></svg>',
+    cuenta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>'
+  };
+
+  function cabecera(titulo, subtitulo, eyebrow) {
+    return (eyebrow ? '<p class="pantalla__eyebrow">' + eyebrow + '</p>' : '') +
+      '<h1 class="pantalla__titulo">' + titulo + '</h1>' +
       (subtitulo ? '<p class="pantalla__sub">' + subtitulo + '</p>' : '');
   }
 
@@ -279,12 +289,19 @@
   }
 
   function tarjetaCuenta() {
-    return '<p class="cuenta-chip">Cuenta terminación ' + Banco.CUENTA.numero.slice(-4) + ' · ' + Banco.CUENTA.titular + '</p>';
+    return '<p class="cuenta-chip">' + ICONOS.cuenta + '<span>Cuenta terminación ' + Banco.CUENTA.numero.slice(-4) + ' · ' + Banco.CUENTA.titular + '</span></p>';
   }
 
   function vistaBienvenida() {
+    var t = Banco.CUENTA.tarjeta;
     return cabecera('Bienvenido a ' + Banco.CUENTA.banco, 'Inserte su tarjeta para comenzar.') +
       '<div class="centro">' +
+      '<div class="tarjeta-banco" aria-hidden="true">' +
+      '<span class="tarjeta-banco__marca">' + Banco.CUENTA.banco + '</span>' +
+      '<div class="tarjeta-banco__chip"></div>' +
+      '<div class="tarjeta-banco__numero">•••• •••• •••• ' + t.slice(-4) + '</div>' +
+      '<div class="tarjeta-banco__pie"><span>' + Banco.CUENTA.titular + '</span><span>Débito</span></div>' +
+      '</div>' +
       '<button class="btn btn--primario btn--grande" data-accion="insertar">Insertar tarjeta</button>' +
       '<p class="nota">Simulación académica. Cuenta de prueba con NIP 8420.</p>' +
       '</div>' +
@@ -310,10 +327,10 @@
   function vistaMenu() {
     return cabecera('¿Qué operación desea realizar?', '') + tarjetaCuenta() + mensajeError() +
       '<div class="menu">' +
-      '<button class="btn btn--tile" data-accion="ir" data-vista="saldo"><span class="tile__icono">$</span>Consulta de saldo</button>' +
-      '<button class="btn btn--tile" data-accion="ir" data-vista="retiro"><span class="tile__icono">↓</span>Retiro de efectivo</button>' +
-      '<button class="btn btn--tile" data-accion="ir" data-vista="deposito-tipo"><span class="tile__icono">→</span>Depósito a otra cuenta</button>' +
-      '<button class="btn btn--tile btn--tile-salir" data-accion="salir"><span class="tile__icono">×</span>Salir</button>' +
+      '<button class="btn btn--tile" data-accion="ir" data-vista="saldo"><span class="tile__icono">' + ICONOS.saldo + '</span>Consulta de saldo<small>Saldo disponible y últimos movimientos</small></button>' +
+      '<button class="btn btn--tile" data-accion="ir" data-vista="retiro"><span class="tile__icono">' + ICONOS.retiro + '</span>Retiro de efectivo<small>Billetes de 100, 200 y 500</small></button>' +
+      '<button class="btn btn--tile" data-accion="ir" data-vista="deposito-tipo"><span class="tile__icono">' + ICONOS.deposito + '</span>Depósito a otra cuenta<small>Por CLABE o número de tarjeta</small></button>' +
+      '<button class="btn btn--tile btn--tile-salir" data-accion="salir"><span class="tile__icono">' + ICONOS.salir + '</span>Salir<small>Terminar sesión y retirar tarjeta</small></button>' +
       '</div>';
   }
 
@@ -322,7 +339,7 @@
     var filas = s.movimientos.map(function (m) {
       return '<tr><td>' + fechaCorta(m.fecha) + '</td><td>' + m.tipo + '</td><td class="num ' + (m.monto < 0 ? 'neg' : 'pos') + '">' + moneda(m.monto) + '</td></tr>';
     }).join('');
-    return cabecera('Consulta de saldo', '') + tarjetaCuenta() +
+    return cabecera('Su saldo', '', 'Consulta de saldo') + tarjetaCuenta() +
       '<div class="saldo">' +
       '<p class="saldo__etiqueta">Saldo disponible</p>' +
       '<p class="saldo__monto">' + moneda(s.saldo) + '</p>' +
@@ -340,7 +357,7 @@
     var botones = REGLAS.MONTOS_RAPIDOS.map(function (m) {
       return '<button class="btn btn--monto" data-accion="monto-retiro" data-monto="' + m + '">' + moneda(m) + '</button>';
     }).join('');
-    return cabecera('Retiro de efectivo', 'Elija un monto o escriba otro.') + mensajeError() +
+    return cabecera('¿Cuánto desea retirar?', 'Elija un monto o escriba otro.', 'Retiro de efectivo') + mensajeError() +
       '<div class="montos">' + botones +
       '<button class="btn btn--monto btn--monto-otro" data-accion="ir" data-vista="retiro-monto">Otro monto</button>' +
       '</div>' +
@@ -348,9 +365,9 @@
       '<div class="acciones"><button class="btn btn--secundario" data-accion="ir" data-vista="menu">Regresar</button></div>';
   }
 
-  function vistaMonto(titulo, ayuda, maximo) {
+  function vistaMonto(titulo, ayuda, maximo, eyebrow) {
     var monto = montoCapturado();
-    return cabecera(titulo, ayuda) +
+    return cabecera(titulo, ayuda, eyebrow) +
       '<div class="centro">' +
       '<p class="captura' + (ui.entrada ? '' : ' captura--vacia') + '" aria-live="off">' + (ui.entrada ? moneda(monto) : '$ 0.00') + '</p>' +
       mensajeError() +
@@ -363,11 +380,11 @@
 
   function vistaRetiroMonto() {
     return vistaMonto('Escriba el monto a retirar', 'Solo billetes de 100, 200 y 500.',
-      'Entre ' + moneda(REGLAS.RETIRO_MIN) + ' y ' + moneda(REGLAS.RETIRO_MAX_OPERACION) + ', en múltiplos de ' + moneda(REGLAS.RETIRO_MULTIPLO) + '.');
+      'Entre ' + moneda(REGLAS.RETIRO_MIN) + ' y ' + moneda(REGLAS.RETIRO_MAX_OPERACION) + ', en múltiplos de ' + moneda(REGLAS.RETIRO_MULTIPLO) + '.', 'Retiro de efectivo');
   }
 
   function vistaDepositoTipo() {
-    return cabecera('Depósito a otra cuenta', '¿Cómo identificará la cuenta destino?') +
+    return cabecera('¿Cómo identificará la cuenta destino?', 'Elija el tipo de número que tiene a la mano.', 'Depósito a otra cuenta') +
       '<div class="menu menu--dos">' +
       '<button class="btn btn--tile" data-accion="tipo-destino" data-tipo="CLABE"><span class="tile__icono">18</span>CLABE interbancaria<small>18 dígitos, cualquier banco</small></button>' +
       '<button class="btn btn--tile" data-accion="tipo-destino" data-tipo="Tarjeta"><span class="tile__icono">16</span>Número de tarjeta<small>16 dígitos</small></button>' +
@@ -386,7 +403,7 @@
     var ayuda = Banco.CUENTAS_PRUEBA.filter(function (c) { return c.tipo === ui.tipoDestino; }).map(function (c) {
       return '<li><button class="enlace" data-accion="llenar" data-numero="' + c.numero + '">' + Validaciones.agruparDigitos(c.numero) + '</button> · ' + c.banco + '</li>';
     }).join('');
-    return cabecera('Escriba la ' + (esClabe ? 'CLABE' : 'tarjeta') + ' destino', largo + ' dígitos.') +
+    return cabecera('Escriba la ' + (esClabe ? 'CLABE' : 'tarjeta') + ' destino', largo + ' dígitos.', 'Depósito a otra cuenta') +
       '<div class="centro">' +
       '<p class="captura captura--cuenta' + (ui.entrada ? '' : ' captura--vacia') + '">' + (ui.entrada ? Validaciones.agruparDigitos(ui.entrada) : '0000 0000 0000 0000' + (esClabe ? ' 00' : '')) + '</p>' +
       '<p class="nota">' + ui.entrada.length + ' de ' + largo + ' dígitos' + (banco ? ' · ' + banco : '') + '</p>' +
@@ -401,7 +418,7 @@
 
   function vistaDepositoMonto() {
     var d = ui.destino;
-    return cabecera('Monto a depositar', 'Destino: ' + d.tipo + ' ' + Validaciones.agruparDigitos(d.numero) + ' (' + d.banco + ')') +
+    return cabecera('¿Cuánto desea depositar?', 'Destino: ' + d.tipo + ' ' + Validaciones.agruparDigitos(d.numero) + ' (' + d.banco + ')', 'Depósito a otra cuenta') +
       '<div class="centro">' +
       '<p class="captura' + (ui.entrada ? '' : ' captura--vacia') + '">' + (ui.entrada ? moneda(montoCapturado()) : '$ 0.00') + '</p>' +
       mensajeError() +
@@ -420,7 +437,7 @@
       filas += '<tr><th>Destino</th><td>' + ui.destino.tipo + ' ' + Validaciones.agruparDigitos(ui.destino.numero) + '<br><small>' + ui.destino.banco + '</small></td></tr>';
     }
     filas += '<tr><th>Cargo a</th><td>Cuenta terminación ' + Banco.CUENTA.numero.slice(-4) + '</td></tr>';
-    return cabecera('Confirme la operación', 'Revise los datos antes de continuar.') +
+    return cabecera('Confirme la operación', 'Revise los datos antes de continuar.', op.tipo === 'retiro' ? 'Retiro de efectivo' : 'Depósito a otra cuenta') +
       '<table class="resumen"><tbody>' + filas + '</tbody></table>' +
       '<div class="acciones">' +
       '<button class="btn btn--secundario" data-accion="cancelar">Cancelar</button>' +
@@ -451,7 +468,7 @@
         return b.cantidad + ' × $' + b.denominacion;
       }).join(', ') + '</p>';
     }
-    return cabecera('Operación exitosa', 'Conserve su comprobante.') +
+    return cabecera('Operación exitosa', 'Conserve su comprobante.', op.tipo === 'retiro' ? 'Retiro de efectivo' : 'Depósito a otra cuenta') +
       billetes +
       '<table class="resumen resumen--ticket"><tbody>' + filas + '</tbody></table>' +
       '<div class="acciones">' +
@@ -504,9 +521,14 @@
       else if (t === 'aceptar') b.disabled = ['despedida', 'bloqueada', 'procesando', 'menu', 'retiro', 'deposito-tipo'].indexOf(ui.vista) !== -1;
       else b.disabled = !ui.campo;
     });
+    // El foco se mueve a la acción principal solo si la persona navega con teclado; con mouse o
+    // pantalla táctil no se dibuja el anillo de foco porque no aporta y ensucia el diseño.
+    if (!usaTeclado) return;
     var foco = $pantalla.querySelector('[autofocus], .btn--primario:not([disabled]), .btn--confirmar, .btn--tile');
     if (foco) foco.focus({ preventScroll: true });
   }
+
+  var usaTeclado = false;
 
   // ---------------------------------------------------------------- Eventos
 
@@ -579,6 +601,8 @@
 
     document.addEventListener('click', alHacerClic);
     document.addEventListener('keydown', alTeclear);
+    document.addEventListener('keydown', function () { usaTeclado = true; }, true);
+    document.addEventListener('pointerdown', function () { usaTeclado = false; }, true);
     document.addEventListener('click', actividad, true);
     document.addEventListener('keydown', actividad, true);
     $btnSalir.addEventListener('click', function () { cerrarSesion(''); });
